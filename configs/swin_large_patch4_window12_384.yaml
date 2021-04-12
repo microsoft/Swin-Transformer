@@ -1,0 +1,13 @@
+# only for evaluation
+DATA:
+  IMG_SIZE: 384
+MODEL:
+  TYPE: swin
+  NAME: swin_large_patch4_window12_384
+  SWIN:
+    EMBED_DIM: 192
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 6, 12, 24, 48 ]
+    WINDOW_SIZE: 12
+TEST:
+  CROP: False
