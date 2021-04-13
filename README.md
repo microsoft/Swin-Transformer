@@ -29,7 +29,7 @@ Initial commits:
 
 ## Introduction
 
-**Swin Transformer** is initially described in [arxiv](https://arxiv.org/abs/2103.14030), which capably serves as a
+**Swin Transformer** (the name `Swin` stands for **S**hifted **win**dow) is initially described in [arxiv](https://arxiv.org/abs/2103.14030), which capably serves as a
 general-purpose backbone for computer vision. It is basically a hierarchical Transformer whose representation is
 computed with shifted windows. The shifted windowing scheme brings greater efficiency by limiting self-attention
 computation to non-overlapping local windows while also allowing for cross-window connection.
