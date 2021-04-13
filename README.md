@@ -35,7 +35,7 @@ computed with shifted windows. The shifted windowing scheme brings greater effic
 computation to non-overlapping local windows while also allowing for cross-window connection.
 
 Swin Transformer achieves strong performance on COCO object detection (`58.7 box AP` and `51.1 mask AP` on test-dev) and
-ADE20K semantic segmentatiion (`53.5 mIoU` on val), surpassing previous models by a large margin.
+ADE20K semantic segmentation (`53.5 mIoU` on val), surpassing previous models by a large margin.
 
 ![teaser](figures/teaser.png)
 
