@@ -110,7 +110,9 @@ def main(config):
         if resume_file:
             if config.MODEL.RESUME:
                 logger.warning(f"auto-resume changing resume file from {config.MODEL.RESUME} to {resume_file}")
+            config.defrost()
             config.MODEL.RESUME = resume_file
+            config.freeze()
             logger.info(f'auto resuming from {resume_file}')
         else:
             logger.info(f'no checkpoint found in {config.OUTPUT}, ignoring auto resume')
