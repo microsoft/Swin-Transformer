@@ -102,6 +102,12 @@ Note: <sup>*</sup> indicates multi-scale testing.
 - For **Object Detection and Instance Segmentation**, please see [Swin Transformer for Object Detection](https://github.com/SwinTransformer/Swin-Transformer-Object-Detection).
 - For **Semantic Segmentation**, please see [Swin Transformer for Semantic Segmentation](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation).
 
+## Third-party Usage and Experiments
+
+***In this pargraph, we cross link third-party repositories which use Swin and report results. You can let us know by raising an issue***
+
+[04/14/2021] Swin for RetinaNet in Detectron: https://github.com/xiaohu2015/SwinT_detectron2
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
