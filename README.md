@@ -106,7 +106,9 @@ Note: <sup>*</sup> indicates multi-scale testing.
 
 ***In this pargraph, we cross link third-party repositories which use Swin and report results. You can let us know by raising an issue***
 
-[04/14/2021] Swin for RetinaNet in Detectron: https://github.com/xiaohu2015/SwinT_detectron2
+[04/14/2021] Swin for RetinaNet in Detectron: https://github.com/xiaohu2015/SwinT_detectron2.
+
+[04/16/2021] Included in a famous model zoo: https://github.com/rwightman/pytorch-image-models.
 
 ## Contributing
 
