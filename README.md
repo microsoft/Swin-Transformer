@@ -110,6 +110,8 @@ Note: <sup>*</sup> indicates multi-scale testing.
 
 [04/16/2021] Included in a famous model zoo: https://github.com/rwightman/pytorch-image-models.
 
+[04/20/2021] Swin-Transformer classifier inference using TorchServe: https://github.com/kamalkraj/Swin-Transformer-Serve
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
