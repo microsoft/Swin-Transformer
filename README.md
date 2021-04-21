@@ -104,7 +104,9 @@ Note: <sup>*</sup> indicates multi-scale testing.
 
 ## Third-party Usage and Experiments
 
-***In this pargraph, we cross link third-party repositories which use Swin and report results. You can let us know by raising an issue***
+***In this pargraph, we cross link third-party repositories which use Swin and report results. You can let us know by raising an issue*** 
+
+(`Note please report accuracy numbers and provide trained models in your new repository to facilitate others to get sense of correctness and model behavior`)
 
 [04/14/2021] Swin for RetinaNet in Detectron: https://github.com/xiaohu2015/SwinT_detectron2.
 
