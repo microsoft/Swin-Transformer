@@ -17,9 +17,14 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 > **Semantic Segmentation**: See [Swin Transformer for Semantic Segmentation](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation).
 
-> **Self-Supervised Learning**: See [MoBY with Swin Transformer](https://github.com/SwinTransformer/Transformer-SSL).
+> **Self-Supervised Learning**: See [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL).
 
 ## Updates
+
+***05/12/2021***
+1. Used as a backbone for `Self-Supervised Learning`: [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL)
+
+Using Swin-Transformer as the backbone for self-supervised learning enables us to evaluate the transferring performance of the learnt representations on down-stream tasks, which is missing in previous works due to the use of ViT/DeiT, which has not been well tamed for down-stream tasks.
 
 ***04/12/2021***
 
@@ -103,7 +108,7 @@ Note: <sup>*</sup> indicates multi-scale testing.
 - For **Image Classification**, please see [get_started.md](get_started.md) for detailed instructions.
 - For **Object Detection and Instance Segmentation**, please see [Swin Transformer for Object Detection](https://github.com/SwinTransformer/Swin-Transformer-Object-Detection).
 - For **Semantic Segmentation**, please see [Swin Transformer for Semantic Segmentation](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation).
-- For **Self-Supervised Learning**, please see [MoBY with Swin Transformer](https://github.com/SwinTransformer/Transformer-SSL).
+- For **Self-Supervised Learning**, please see [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL).
 
 ## Third-party Usage and Experiments
 
