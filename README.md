@@ -26,9 +26,9 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 > **Video Swin Transformer**: See [Video Swin Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer).
 
 ## Updates
-***05/25/2021***
-1. We proposed [Video Swin Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer) for video recognition.
-`Video Swin Transformer` achieves state-of-the-art accuracy on a broad range of video recognition benchmarks, including on action recognition (`84.9` top-1 accuracy on Kinetics-400 and `86.1` top-1 accuracy on Kinetics-600 with `~20x` less pre-training data and `~3x` smaller model size) and temporal modeling (`69.6` top-1 accuracy on Something-Something v2).
+***06/25/2021***
+1. [Video Swin Transformer](https://arxiv.org/abs/2106.13230) is released at [Video-Swin-Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer).
+`Video Swin Transformer` achieves state-of-the-art accuracy on a broad range of video recognition benchmarks, including action recognition (`84.9` top-1 accuracy on Kinetics-400 and `86.1` top-1 accuracy on Kinetics-600 with `~20x` less pre-training data and `~3x` smaller model size) and temporal modeling (`69.6` top-1 accuracy on Something-Something v2).
 
 ***05/12/2021***
 1. Used as a backbone for `Self-Supervised Learning`: [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL)
