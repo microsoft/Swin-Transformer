@@ -6,6 +6,10 @@
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/swin-transformer-hierarchical-vision/instance-segmentation-on-coco-minival)](https://paperswithcode.com/sota/instance-segmentation-on-coco-minival?p=swin-transformer-hierarchical-vision)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/swin-transformer-hierarchical-vision/semantic-segmentation-on-ade20k)](https://paperswithcode.com/sota/semantic-segmentation-on-ade20k?p=swin-transformer-hierarchical-vision)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/swin-transformer-hierarchical-vision/semantic-segmentation-on-ade20k-val)](https://paperswithcode.com/sota/semantic-segmentation-on-ade20k-val?p=swin-transformer-hierarchical-vision)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/video-swin-transformer/action-recognition-in-videos-on-something)](https://paperswithcode.com/sota/action-recognition-in-videos-on-something?p=video-swin-transformer)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/video-swin-transformer/action-classification-on-kinetics-400)](https://paperswithcode.com/sota/action-classification-on-kinetics-400?p=video-swin-transformer)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/video-swin-transformer/action-classification-on-kinetics-600)](https://paperswithcode.com/sota/action-classification-on-kinetics-600?p=video-swin-transformer)
+
 
 By [Ze Liu](https://github.com/zeliu98/)\*, [Yutong Lin](https://github.com/impiga)\*, [Yue Cao](http://yue-cao.me)\*, [Han Hu](https://ancientmooner.github.io/)\*, [Yixuan Wei](https://github.com/weiyx16), [Zheng Zhang](https://stupidzz.github.io/), [Stephen Lin](https://scholar.google.com/citations?user=c3PYmxUAAAAJ&hl=en) and [Baining Guo](https://www.microsoft.com/en-us/research/people/bainguo/).
 
@@ -19,7 +23,12 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 > **Self-Supervised Learning**: See [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL).
 
+> **Video Swin Transformer**: See [Video Swin Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer).
+
 ## Updates
+***05/25/2021***
+1. We proposed [Video Swin Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer) for video recognition.
+`Video Swin Transformer` achieves state-of-the-art accuracy on a broad range of video recognition benchmarks, including on action recognition (`84.9` top-1 accuracy on Kinetics-400 and `86.1` top-1 accuracy on Kinetics-600 with `~20x` less pre-training data and `~3x` smaller model size) and temporal modeling (`69.6` top-1 accuracy on Something-Something v2).
 
 ***05/12/2021***
 1. Used as a backbone for `Self-Supervised Learning`: [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL)
@@ -109,6 +118,7 @@ Note: <sup>*</sup> indicates multi-scale testing.
 - For **Object Detection and Instance Segmentation**, please see [Swin Transformer for Object Detection](https://github.com/SwinTransformer/Swin-Transformer-Object-Detection).
 - For **Semantic Segmentation**, please see [Swin Transformer for Semantic Segmentation](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation).
 - For **Self-Supervised Learning**, please see [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL).
+- For **Video Recognition**, please see [Video Swin Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer).
 
 ## Third-party Usage and Experiments
 
