@@ -2,7 +2,7 @@ DATA:
   IMG_SIZE: 256
 MODEL:
   TYPE: swin
-  NAME: swin_tiny_patch4_hd24_window8_256
+  NAME: swin_tiny_hd24_patch4_window8_256
   DROP_PATH_RATE: 0.2
   SWIN:
     EMBED_DIM: 96
