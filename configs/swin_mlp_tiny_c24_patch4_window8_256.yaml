@@ -1,0 +1,11 @@
+DATA:
+  IMG_SIZE: 256
+MODEL:
+  TYPE: swin_mlp
+  NAME: swin_mlp_tiny_c24_patch4_window8_256
+  DROP_PATH_RATE: 0.2
+  SWIN_MLP:
+    EMBED_DIM: 96
+    DEPTHS: [ 2, 2, 6, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 8

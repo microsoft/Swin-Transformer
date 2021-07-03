@@ -71,6 +71,18 @@ _C.MODEL.SWIN.QK_SCALE = None
 _C.MODEL.SWIN.APE = False
 _C.MODEL.SWIN.PATCH_NORM = True
 
+# Swin MLP parameters
+_C.MODEL.SWIN_MLP = CN()
+_C.MODEL.SWIN_MLP.PATCH_SIZE = 4
+_C.MODEL.SWIN_MLP.IN_CHANS = 3
+_C.MODEL.SWIN_MLP.EMBED_DIM = 96
+_C.MODEL.SWIN_MLP.DEPTHS = [2, 2, 6, 2]
+_C.MODEL.SWIN_MLP.NUM_HEADS = [3, 6, 12, 24]
+_C.MODEL.SWIN_MLP.WINDOW_SIZE = 7
+_C.MODEL.SWIN_MLP.MLP_RATIO = 4.
+_C.MODEL.SWIN_MLP.APE = False
+_C.MODEL.SWIN_MLP.PATCH_NORM = True
+
 # -----------------------------------------------------------------------------
 # Training settings
 # -----------------------------------------------------------------------------

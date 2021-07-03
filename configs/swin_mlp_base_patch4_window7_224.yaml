@@ -1,0 +1,9 @@
+MODEL:
+  TYPE: swin_mlp
+  NAME: swin_mlp_base_patch4_window7_224
+  DROP_PATH_RATE: 0.5
+  SWIN_MLP:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 7
