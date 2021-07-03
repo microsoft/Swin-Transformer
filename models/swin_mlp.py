@@ -9,7 +9,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-import numpy as np
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 
@@ -167,12 +166,14 @@ class SwinMLPBlock(nn.Module):
     def flops(self):
         flops = 0
         H, W = self.input_resolution
-        Hp = int(np.ceil(H / self.window_size)) * self.window_size
-        Wp = int(np.ceil(W / self.window_size)) * self.window_size
         # norm1
         flops += self.dim * H * W
-        # W-MSA/SW-MSA
-        nW = Hp * Wp / self.window_size / self.window_size
+
+        # Window/Shifted-Window Spatial MLP
+        if self.shift_size > 0:
+            nW = (H / self.window_size + 1) * (W / self.window_size + 1)
+        else:
+            nW = H * W / self.window_size / self.window_size
         flops += nW * self.dim * (self.window_size * self.window_size) * (self.window_size * self.window_size)
         # mlp
         flops += 2 * H * W * self.dim * self.dim * self.mlp_ratio
