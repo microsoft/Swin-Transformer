@@ -27,7 +27,7 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 ## Updates
 ***07/03/2021***
-1. Add **Swin MLP**: a hierarchical fully MLP architecture using shifted windows.
+1. Add **Swin MLP**, which is an adaption of `Swin Transformer` by replacing all multi-head self-attention (MHSA) blocks by MLP layers. The shifted window configuration can also significantly improve the performance of vanilla MLP architectures. 
 
 ***06/25/2021***
 1. [Video Swin Transformer](https://arxiv.org/abs/2106.13230) is released at [Video-Swin-Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer).
@@ -86,7 +86,7 @@ ADE20K semantic segmentation (`53.5 mIoU` on val), surpassing previous models by
 | SwinMLP-T/C6 | ImageNet-1K | 256x256 | 79.7 | 94.9 | 23M | 4.0G | 766 | [github](https://github.com/SwinTransformer/storage/releases/download/v1.0.5/swin_mlp_tiny_c6_patch4_window8_256.pth)/[baidu](https://pan.baidu.com/s/1hUTYVT2W1CsjICw-3W-Vjg)/[config](configs/swin_mlp_tiny_c6_patch4_window8_256.yaml) |
 | SwinMLP-B | ImageNet-1K | 224x224 | 81.3 | 95.3 | 61M | 10.4G | 409 | [github](https://github.com/SwinTransformer/storage/releases/download/v1.0.5/swin_mlp_base_patch4_window7_224.pth)/[baidu](https://pan.baidu.com/s/1zww3dnbX3GxNiGfb-GwyUg)/[config](configs/swin_mlp_base_patch4_window7_224.yaml) |
 
-Note: access code for `baidu` is `swin`.
+Note: access code for `baidu` is `swin`. C24 means each head has 24 channels.
 
 ## Main Results on Downstream Tasks
 
