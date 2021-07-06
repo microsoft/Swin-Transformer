@@ -27,7 +27,7 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 ## Updates
 ***07/03/2021***
-1. Add **Swin MLP**, which is an adaption of `Swin Transformer` by replacing all multi-head self-attention (MHSA) blocks by MLP layers. The shifted window configuration can also significantly improve the performance of vanilla MLP architectures. 
+1. Add **Swin MLP**, which is an adaption of `Swin Transformer` by replacing all multi-head self-attention (MHSA) blocks by MLP layers (more precisely it is a group linear layer). The shifted window configuration can also significantly improve the performance of vanilla MLP architectures. 
 
 ***06/25/2021***
 1. [Video Swin Transformer](https://arxiv.org/abs/2106.13230) is released at [Video-Swin-Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer).
