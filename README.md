@@ -29,7 +29,7 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 ## Updates
 ***08/09/2021***
-1. [Soft Teacher](https://arxiv.org/pdf/2106.09018v2.pdf) will be released at [GitHub Repo](https://github.com/microsoft/SoftTeacher). `Soft Teacher` achieves `61.3 box AP` and `53.0 mask AP` on COCO test-dev, which is a new record on COCO benchmark.
+1. [Soft Teacher](https://arxiv.org/pdf/2106.09018v2.pdf) will appear at ICCV2021. The code will be released at [GitHub Repo](https://github.com/microsoft/SoftTeacher). `Soft Teacher` is an end-to-end semi-supervisd object detection method, achieving a new record on the COCO test-dev: `61.3 box AP` and `53.0 mask AP`.
  
 ***07/03/2021***
 1. Add **Swin MLP**, which is an adaption of `Swin Transformer` by replacing all multi-head self-attention (MHSA) blocks by MLP layers (more precisely it is a group linear layer). The shifted window configuration can also significantly improve the performance of vanilla MLP architectures. 
