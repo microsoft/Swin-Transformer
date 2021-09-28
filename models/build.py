@@ -44,6 +44,6 @@ def build_model(config):
                         patch_norm=config.MODEL.SWIN_MLP.PATCH_NORM,
                         use_checkpoint=config.TRAIN.USE_CHECKPOINT)
     else:
-        raise NotImplementedError(f"Unkown model: {model_type}")
+        raise NotImplementedError(f"Unknown model: {model_type}")
 
     return model
