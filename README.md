@@ -29,6 +29,7 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 ## Updates
 ***10/12/2021***
+
 Swin Transformer received ICCV 2021 best paper award (Marr Prize).
 
 ***08/09/2021***
