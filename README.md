@@ -29,6 +29,9 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 ## Updates
 ***08/09/2021***
+Swin Transformer received ICCV 2021 best paper award (Marr Prize).
+
+***08/09/2021***
 1. [Soft Teacher](https://arxiv.org/pdf/2106.09018v2.pdf) will appear at ICCV2021. The code will be released at [GitHub Repo](https://github.com/microsoft/SoftTeacher). `Soft Teacher` is an end-to-end semi-supervisd object detection method, achieving a new record on the COCO test-dev: `61.3 box AP` and `53.0 mask AP`.
  
 ***07/03/2021***
