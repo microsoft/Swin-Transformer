@@ -28,7 +28,7 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 > **Semi-Supervised Object Detection**: See [Soft Teacher](https://github.com/microsoft/SoftTeacher).
 
 ## Updates
-***08/09/2021***
+***10/12/2021***
 Swin Transformer received ICCV 2021 best paper award (Marr Prize).
 
 ***08/09/2021***
