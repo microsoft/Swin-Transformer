@@ -193,6 +193,26 @@ python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.
 --accumulation-steps 2 [--use-checkpoint]
 ```
 
+### Fine-tuning on higher resolution
+
+For example, to fine-tune a `Swin-B` model pre-trained on 224x224 resolution to 384x384 resolution:
+
+```bashs
+python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
+--cfg configs/swin_base_patch4_window12_384_finetune.yaml --pretrained swin_base_patch4_window7_224.pth \
+--data-path <imagenet-path> --batch-size 64 --accumulation-steps 2 [--use-checkpoint]
+```
+
+### Fine-tuning from a ImageNet-22K(21K) pre-trained model
+
+For example, to fine-tune a `Swin-B` model pre-trained on ImageNet-22K(21K):
+
+```bashs
+python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
+--cfg configs/swin_base_patch4_window7_224_22kto1k_finetune.yaml --pretrained swin_base_patch4_window7_224_22k.pth \
+--data-path <imagenet-path> --batch-size 64 --accumulation-steps 2 [--use-checkpoint]
+```
+
 ### Throughput
 
 To measure the throughput, run:

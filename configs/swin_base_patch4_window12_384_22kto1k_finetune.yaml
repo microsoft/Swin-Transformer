@@ -1,0 +1,20 @@
+DATA:
+  IMG_SIZE: 384
+MODEL:
+  TYPE: swin
+  NAME: swin_base_patch4_window12_384_22kto1k_finetune
+  DROP_PATH_RATE: 0.2
+  SWIN:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 12
+TRAIN:
+  EPOCHS: 30
+  WARMUP_EPOCHS: 5
+  WEIGHT_DECAY: 1e-8
+  BASE_LR: 2e-05
+  WARMUP_LR: 2e-08
+  MIN_LR: 2e-07
+TEST:
+  CROP: False

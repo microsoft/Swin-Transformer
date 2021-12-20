@@ -46,6 +46,9 @@ _C.MODEL = CN()
 _C.MODEL.TYPE = 'swin'
 # Model name
 _C.MODEL.NAME = 'swin_tiny_patch4_window7_224'
+# Pretrained weight from checkpoint, could be imagenet22k pretrained weight
+# could be overwritten by command line argument
+_C.MODEL.PRETRAINED = ''
 # Checkpoint to resume, could be overwritten by command line argument
 _C.MODEL.RESUME = ''
 # Number of classes, overwritten in data preparation
@@ -214,6 +217,8 @@ def update_config(config, args):
         config.DATA.ZIP_MODE = True
     if args.cache_mode:
         config.DATA.CACHE_MODE = args.cache_mode
+    if args.pretrained:
+        config.MODEL.PRETRAINED = args.pretrained
     if args.resume:
         config.MODEL.RESUME = args.resume
     if args.accumulation_steps:
