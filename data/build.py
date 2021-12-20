@@ -53,8 +53,12 @@ def build_loader(config):
             dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
         )
 
-    indices = np.arange(dist.get_rank(), len(dataset_val), dist.get_world_size())
-    sampler_val = SubsetRandomSampler(indices)
+    if config.TEST.SEQUENTIAL:
+        sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+    else:
+        sampler_val = torch.utils.data.distributed.DistributedSampler(
+            dataset_val, shuffle=False
+        )
 
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train, sampler=sampler_train,
