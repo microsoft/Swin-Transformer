@@ -26,6 +26,11 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 
 ## Updates
+
+***2/9/2022***
+
+`News`: Integrated into [Huggingface Spaces 🤗](https://huggingface.co/spaces) using [Gradio](https://github.com/gradio-app/gradio). Try out the Web Demo [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/Swin-Transformer)
+
 ***10/12/2021***
 
 `News`: Swin Transformer received ICCV 2021 best paper award (Marr Prize).
