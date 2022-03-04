@@ -26,6 +26,10 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 
 ## Updates
+***03/02/2022***
+
+`News`: Swin Transformer V2 and SimMIM got accepted by CVPR 2022. [SimMIM](https://github.com/microsoft/SimMIM) is a self-supervised pre-training approach based on masked image modeling, a key technique that works out the 3-billion-parameter Swin V2 model using `40x less labelled data` than that of previous billion-scale models based on JFT-3B. 
+
 ***10/12/2021***
 
 `News`: Swin Transformer received ICCV 2021 best paper award (Marr Prize).
@@ -127,21 +131,36 @@ Note: <sup>*</sup> indicates multi-scale testing.
 ## Citing Swin Transformer
 
 ```
-@article{liu2021Swin,
+@inproceedings{liu2021Swin,
   title={Swin Transformer: Hierarchical Vision Transformer using Shifted Windows},
   author={Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
-  journal={International Conference on Computer Vision (ICCV)},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
   year={2021}
 }
 ```
 ```
-@misc{liu2021swinv2,
-      title={Swin Transformer V2: Scaling Up Capacity and Resolution}, 
-      author={Ze Liu and Han Hu and Yutong Lin and Zhuliang Yao and Zhenda Xie and Yixuan Wei and Jia Ning and Yue Cao and Zheng Zhang and Li Dong and Furu Wei and Baining Guo},
-      year={2021},
-      eprint={2111.09883},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@inproceedings{liu2021swinv2,
+  title={Swin Transformer V2: Scaling Up Capacity and Resolution}, 
+  author={Ze Liu and Han Hu and Yutong Lin and Zhuliang Yao and Zhenda Xie and Yixuan Wei and Jia Ning and Yue Cao and Zheng Zhang and Li Dong and Furu Wei and Baining Guo},
+  booktitle={International Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2022}
+}
+```
+```
+@inproceedings{xie2021simmim,
+  title={SimMIM: A Simple Framework for Masked Image Modeling},
+  author={Xie, Zhenda and Zhang, Zheng and Cao, Yue and Lin, Yutong and Bao, Jianmin and Yao, Zhuliang and Dai, Qi and Hu, Han},
+  booktitle={International Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2022}
+}
+```
+```
+@inproceedings{hu2019local,
+  title={Local Relation Networks for Image Recognition},
+  author={Hu, Han and Zhang, Zheng and Xie, Zhenda and Lin, Stephen},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages={3464--3473},
+  year={2019}
 }
 ```
 
