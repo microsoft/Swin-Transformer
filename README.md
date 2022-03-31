@@ -24,6 +24,8 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 > :fire:	 **SSL: Masked Image Modeling**: See [SimMIM](https://github.com/microsoft/SimMIM).
 
+> **Audio Classification**: See [Hierarchical Token Semantic Audio Transformer](https://github.com/RetroCirce/HTS-Audio-Transformer).
+
 
 ## Updates
 
