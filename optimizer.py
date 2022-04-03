@@ -12,10 +12,8 @@ def build_optimizer(config, model):
     """
     Build optimizer, set weight decay of normalization to 0 by default.
     """
-    skip = {}
     skip_keywords = {}
-    if hasattr(model, 'no_weight_decay'):
-        skip = model.no_weight_decay()
+    skip = model.no_weight_decay() if hasattr(model, 'no_weight_decay') else {}
     if hasattr(model, 'no_weight_decay_keywords'):
         skip_keywords = model.no_weight_decay_keywords()
     parameters = set_weight_decay(model, skip, skip_keywords)
@@ -50,8 +48,4 @@ def set_weight_decay(model, skip_list=(), skip_keywords=()):
 
 
 def check_keywords_in_name(name, keywords=()):
-    isin = False
-    for keyword in keywords:
-        if keyword in name:
-            isin = True
-    return isin
+    return any(keyword in name for keyword in keywords)

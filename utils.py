@@ -72,15 +72,14 @@ def load_pretrained(config, model, logger):
         L2, nH2 = relative_position_bias_table_current.size()
         if nH1 != nH2:
             logger.warning(f"Error in loading {k}, passing......")
-        else:
-            if L1 != L2:
-                # bicubic interpolate relative_position_bias_table if not match
-                S1 = int(L1 ** 0.5)
-                S2 = int(L2 ** 0.5)
-                relative_position_bias_table_pretrained_resized = torch.nn.functional.interpolate(
-                    relative_position_bias_table_pretrained.permute(1, 0).view(1, nH1, S1, S1), size=(S2, S2),
-                    mode='bicubic')
-                state_dict[k] = relative_position_bias_table_pretrained_resized.view(nH2, L2).permute(1, 0)
+        elif L1 != L2:
+            # bicubic interpolate relative_position_bias_table if not match
+            S1 = int(L1 ** 0.5)
+            S2 = int(L2 ** 0.5)
+            relative_position_bias_table_pretrained_resized = torch.nn.functional.interpolate(
+                relative_position_bias_table_pretrained.permute(1, 0).view(1, nH1, S1, S1), size=(S2, S2),
+                mode='bicubic')
+            state_dict[k] = relative_position_bias_table_pretrained_resized.view(nH2, L2).permute(1, 0)
 
     # bicubic interpolate absolute_pos_embed if not match
     absolute_pos_embed_keys = [k for k in state_dict.keys() if "absolute_pos_embed" in k]
@@ -92,17 +91,16 @@ def load_pretrained(config, model, logger):
         _, L2, C2 = absolute_pos_embed_current.size()
         if C1 != C1:
             logger.warning(f"Error in loading {k}, passing......")
-        else:
-            if L1 != L2:
-                S1 = int(L1 ** 0.5)
-                S2 = int(L2 ** 0.5)
-                absolute_pos_embed_pretrained = absolute_pos_embed_pretrained.reshape(-1, S1, S1, C1)
-                absolute_pos_embed_pretrained = absolute_pos_embed_pretrained.permute(0, 3, 1, 2)
-                absolute_pos_embed_pretrained_resized = torch.nn.functional.interpolate(
-                    absolute_pos_embed_pretrained, size=(S2, S2), mode='bicubic')
-                absolute_pos_embed_pretrained_resized = absolute_pos_embed_pretrained_resized.permute(0, 2, 3, 1)
-                absolute_pos_embed_pretrained_resized = absolute_pos_embed_pretrained_resized.flatten(1, 2)
-                state_dict[k] = absolute_pos_embed_pretrained_resized
+        elif L1 != L2:
+            S1 = int(L1 ** 0.5)
+            S2 = int(L2 ** 0.5)
+            absolute_pos_embed_pretrained = absolute_pos_embed_pretrained.reshape(-1, S1, S1, C1)
+            absolute_pos_embed_pretrained = absolute_pos_embed_pretrained.permute(0, 3, 1, 2)
+            absolute_pos_embed_pretrained_resized = torch.nn.functional.interpolate(
+                absolute_pos_embed_pretrained, size=(S2, S2), mode='bicubic')
+            absolute_pos_embed_pretrained_resized = absolute_pos_embed_pretrained_resized.permute(0, 2, 3, 1)
+            absolute_pos_embed_pretrained_resized = absolute_pos_embed_pretrained_resized.flatten(1, 2)
+            state_dict[k] = absolute_pos_embed_pretrained_resized
 
     # check classifier, if not match, then re-init classifier to zero
     head_bias_pretrained = state_dict['head.bias']
@@ -111,7 +109,7 @@ def load_pretrained(config, model, logger):
     if (Nc1 != Nc2):
         if Nc1 == 21841 and Nc2 == 1000:
             logger.info("loading ImageNet-22K weight to ImageNet-1K ......")
-            map22kto1k_path = f'data/map22kto1k.txt'
+            map22kto1k_path = 'data/map22kto1k.txt'
             with open(map22kto1k_path) as f:
                 map22kto1k = f.readlines()
             map22kto1k = [int(id22k.strip()) for id22k in map22kto1k]
@@ -122,7 +120,10 @@ def load_pretrained(config, model, logger):
             torch.nn.init.constant_(model.head.weight, 0.)
             del state_dict['head.weight']
             del state_dict['head.bias']
-            logger.warning(f"Error in loading classifier head, re-init classifier head to 0")
+            logger.warning(
+                "Error in loading classifier head, re-init classifier head to 0"
+            )
+
 
     msg = model.load_state_dict(state_dict, strict=False)
     logger.warning(msg)
@@ -166,13 +167,16 @@ def auto_resume_helper(output_dir):
     checkpoints = os.listdir(output_dir)
     checkpoints = [ckpt for ckpt in checkpoints if ckpt.endswith('pth')]
     print(f"All checkpoints founded in {output_dir}: {checkpoints}")
-    if len(checkpoints) > 0:
-        latest_checkpoint = max([os.path.join(output_dir, d) for d in checkpoints], key=os.path.getmtime)
+    if checkpoints:
+        latest_checkpoint = max(
+            (os.path.join(output_dir, d) for d in checkpoints),
+            key=os.path.getmtime,
+        )
+
         print(f"The latest checkpoint founded: {latest_checkpoint}")
-        resume_file = latest_checkpoint
+        return latest_checkpoint
     else:
-        resume_file = None
-    return resume_file
+        return None
 
 
 def reduce_tensor(tensor):

@@ -196,7 +196,7 @@ def _update_config_from_file(config, cfg_file):
             _update_config_from_file(
                 config, os.path.join(os.path.dirname(cfg_file), cfg)
             )
-    print('=> merge config from {}'.format(cfg_file))
+    print(f'=> merge config from {cfg_file}')
     config.merge_from_file(cfg_file)
     config.freeze()
 

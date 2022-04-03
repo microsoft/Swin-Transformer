@@ -56,7 +56,7 @@ def make_dataset_with_ann(ann_file, img_prefix, extensions):
     with open(ann_file, "r") as f:
         contents = f.readlines()
         for line_str in contents:
-            path_contents = [c for c in line_str.split('\t')]
+            path_contents = list(line_str.split('\t'))
             im_file_name = path_contents[0]
             class_index = int(path_contents[1])
 
@@ -102,8 +102,15 @@ class DatasetFolder(data.Dataset):
                                             extensions)
 
         if len(samples) == 0:
-            raise (RuntimeError("Found 0 files in subfolders of: " + root + "\n" +
-                                "Supported extensions are: " + ",".join(extensions)))
+            raise RuntimeError(
+                (
+                    f"Found 0 files in subfolders of: {root}"
+                    + "\n"
+                    + "Supported extensions are: "
+                )
+                + ",".join(extensions)
+            )
+
 
         self.root = root
         self.loader = loader
@@ -162,7 +169,7 @@ class DatasetFolder(data.Dataset):
         return len(self.samples)
 
     def __repr__(self):
-        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str = f'Dataset {self.__class__.__name__}' + '\n'
         fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
         fmt_str += '    Root Location: {}\n'.format(self.root)
         tmp = '    Transforms (if any): '
@@ -242,10 +249,7 @@ class CachedImageFolder(DatasetFolder):
         """
         path, target = self.samples[index]
         image = self.loader(path)
-        if self.transform is not None:
-            img = self.transform(image)
-        else:
-            img = image
+        img = self.transform(image) if self.transform is not None else image
         if self.target_transform is not None:
             target = self.target_transform(target)
 
