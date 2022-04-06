@@ -24,8 +24,6 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 > :fire:	 **SSL: Masked Image Modeling**: See [SimMIM](https://github.com/microsoft/SimMIM).
 
-> **Audio Classification**: See [Hierarchical Token Semantic Audio Transformer](https://github.com/RetroCirce/HTS-Audio-Transformer).
-
 
 ## Updates
 
@@ -184,6 +182,8 @@ Note: <sup>*</sup> indicates multi-scale testing.
 ***In this pargraph, we cross link third-party repositories which use Swin and report results. You can let us know by raising an issue*** 
 
 (`Note please report accuracy numbers and provide trained models in your new repository to facilitate others to get sense of correctness and model behavior`)
+
+[04/06/2022] Swin Transformer for Audio Classification: [Hierarchical Token Semantic Audio Transformer](https://github.com/RetroCirce/HTS-Audio-Transformer).
 
 [12/21/2021] Swin Transformer for StyleGAN: [StyleSwin](https://github.com/microsoft/StyleSwin)
 
