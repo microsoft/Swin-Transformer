@@ -142,7 +142,7 @@ For example, to evaluate the `Swin-B` with a single GPU:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node 1 --master_port 12345 main.py --eval \
---cfg configs/swin_base_patch4_window7_224.yaml --resume swin_base_patch4_window7_224.pth --data-path <imagenet-path>
+--cfg configs/swin/swin_base_patch4_window7_224.yaml --resume swin_base_patch4_window7_224.pth --data-path <imagenet-path>
 ```
 
 ### Training from scratch
@@ -175,21 +175,21 @@ For example, to train `Swin Transformer` with 8 GPU on a single node for 300 epo
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
---cfg configs/swin_tiny_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128 
+--cfg configs/swin/swin_tiny_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128 
 ```
 
 `Swin-S`:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
---cfg configs/swin_small_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128 
+--cfg configs/swin/swin_small_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128 
 ```
 
 `Swin-B`:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
---cfg configs/swin_base_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 64 \
+--cfg configs/swin/swin_base_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 64 \
 --accumulation-steps 2 [--use-checkpoint]
 ```
 
@@ -199,7 +199,7 @@ For example, to fine-tune a `Swin-B` model pre-trained on 224x224 resolution to 
 
 ```bashs
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
---cfg configs/swin_base_patch4_window12_384_finetune.yaml --pretrained swin_base_patch4_window7_224.pth \
+--cfg configs/swin/swin_base_patch4_window12_384_finetune.yaml --pretrained swin_base_patch4_window7_224.pth \
 --data-path <imagenet-path> --batch-size 64 --accumulation-steps 2 [--use-checkpoint]
 ```
 
@@ -209,7 +209,7 @@ For example, to fine-tune a `Swin-B` model pre-trained on ImageNet-22K(21K):
 
 ```bashs
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
---cfg configs/swin_base_patch4_window7_224_22kto1k_finetune.yaml --pretrained swin_base_patch4_window7_224_22k.pth \
+--cfg configs/swin/swin_base_patch4_window7_224_22kto1k_finetune.yaml --pretrained swin_base_patch4_window7_224_22k.pth \
 --data-path <imagenet-path> --batch-size 64 --accumulation-steps 2 [--use-checkpoint]
 ```
 

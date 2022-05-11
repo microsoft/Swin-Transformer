@@ -1,0 +1,11 @@
+DATA:
+  IMG_SIZE: 256
+MODEL:
+  TYPE: swinv2
+  NAME: swinv2_base_patch4_window8_256
+  DROP_PATH_RATE: 0.5
+  SWINV2:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 8
