@@ -28,6 +28,9 @@ Note: access code for `baidu` is `swin`.
 
 ### Install
 
+We recommend using the pytorch docker `nvcr>=21.05` by
+nvidia: https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch.
+
 - Clone this repo:
 
 ```bash
@@ -42,26 +45,18 @@ conda create -n swin python=3.7 -y
 conda activate swin
 ```
 
-- Install `CUDA==10.1` with `cudnn7` following
+- Install `CUDA>=10.2` with `cudnn>=7` following
   the [official installation instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
-- Install `PyTorch==1.7.1` and `torchvision==0.8.2` with `CUDA==10.1`:
+- Install `PyTorch>=1.8.0` and `torchvision>=0.9.0` with `CUDA>=10.2`:
 
 ```bash
-conda install pytorch==1.7.1 torchvision==0.8.2 cudatoolkit=10.1 -c pytorch
+conda install pytorch==1.8.0 torchvision==0.9.0 cudatoolkit=10.2 -c pytorch
 ```
 
-- Install `timm==0.3.2`:
+- Install `timm==0.4.12`:
 
 ```bash
-pip install timm==0.3.2
-```
-
-- Install `Apex`:
-
-```bash
-git clone https://github.com/NVIDIA/apex
-cd apex
-pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+pip install timm==0.4.12
 ```
 
 - Install other requirements:
