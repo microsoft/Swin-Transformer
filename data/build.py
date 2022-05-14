@@ -31,6 +31,11 @@ try:
         else:
             # default bilinear, do we want to allow nearest?
             return InterpolationMode.BILINEAR
+
+
+    import timm.data.transforms as timm_transforms
+
+    timm_transforms._pil_interp = _pil_interp
 except:
     from timm.data.transforms import _pil_interp
 
