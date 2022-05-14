@@ -214,5 +214,5 @@ To measure the throughput, run:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node 1 --master_port 12345  main.py \
---cfg <config-file> --data-path <imagenet-path> --batch-size 64 --throughput --amp-opt-level O0
+--cfg <config-file> --data-path <imagenet-path> --batch-size 64 --throughput --disable_amp
 ```
