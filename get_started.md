@@ -129,17 +129,17 @@ load data:
   & [ILSVRC2011fall_whole_map_val.txt](https://github.com/SwinTransformer/storage/releases/download/v2.0.1/ILSVRC2011fall_whole_map_val.txt))
   , and put them in the parent directory of `fall11_whole`. The file structure should look like:
 
-- ```bash
-  $ tree imagenet22k/
-  imagenet22k/
-  ├── ILSVRC2011fall_whole_map_train.txt
-  ├── ILSVRC2011fall_whole_map_val.txt
-  └── fall11_whole
-      ├── n00004475
-      ├── n00005787
-      ├── n00006024
-      ├── n00006484
-      └── ...
+  ```bash
+    $ tree imagenet22k/
+    imagenet22k/
+    ├── ILSVRC2011fall_whole_map_train.txt
+    ├── ILSVRC2011fall_whole_map_val.txt
+    └── fall11_whole
+        ├── n00004475
+        ├── n00005787
+        ├── n00006024
+        ├── n00006484
+        └── ...
   ```
 
 ### Evaluation
