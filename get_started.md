@@ -123,6 +123,24 @@ load data:
   n01440764/n01440764_10040.JPEG	0
   n01440764/n01440764_10042.JPEG	0
   ```
+- For ImageNet-22K dataset, make a folder named `fall11_whole` and move all images to labeled sub-folders in this
+  folder. Then download the train-val split
+  file ([ILSVRC2011fall_whole_map_train.txt](https://github.com/SwinTransformer/storage/releases/download/v2.0.1/ILSVRC2011fall_whole_map_train.txt)
+  & [ILSVRC2011fall_whole_map_val.txt](https://github.com/SwinTransformer/storage/releases/download/v2.0.1/ILSVRC2011fall_whole_map_val.txt))
+  , and put them in the parent directory of `fall11_whole`. The file structure should look like:
+
+- ```bash
+  $ tree imagenet22k/
+  imagenet22k/
+  ├── ILSVRC2011fall_whole_map_train.txt
+  ├── ILSVRC2011fall_whole_map_val.txt
+  └── fall11_whole
+      ├── n00004475
+      ├── n00005787
+      ├── n00006024
+      ├── n00006484
+      └── ...
+  ```
 
 ### Evaluation
 
@@ -140,7 +158,7 @@ python -m torch.distributed.launch --nproc_per_node 1 --master_port 12345 main.p
 --cfg configs/swin/swin_base_patch4_window7_224.yaml --resume swin_base_patch4_window7_224.pth --data-path <imagenet-path>
 ```
 
-### Training from scratch
+### Training from scratch on ImageNet-1K
 
 To train a `Swin Transformer` on ImageNet from scratch, run:
 
@@ -186,6 +204,16 @@ python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
 --cfg configs/swin/swin_base_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 64 \
 --accumulation-steps 2 [--use-checkpoint]
+```
+
+### Pre-training on ImageNet-22K
+
+For example, to pre-train a `Swin-B` model on ImageNet-22K:
+
+```bash
+python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
+--cfg configs/swin/swin_base_patch4_window7_224_22k.yaml --data-path <imagenet22k-path> --batch-size 64 \
+--accumulation-steps 8 [--use-checkpoint]
 ```
 
 ### Fine-tuning on higher resolution
