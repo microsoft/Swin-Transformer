@@ -63,7 +63,7 @@ def build_loader(config):
         sampler_val = torch.utils.data.SequentialSampler(dataset_val)
     else:
         sampler_val = torch.utils.data.distributed.DistributedSampler(
-            dataset_val, shuffle=False
+            dataset_val, shuffle=config.TEST.SHUFFLE
         )
 
     data_loader_train = torch.utils.data.DataLoader(

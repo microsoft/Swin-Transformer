@@ -22,10 +22,17 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 > **SSL: Contrasitive Learning**: See [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL).
 
-> :fire:	 **SSL: Masked Image Modeling**: See [SimMIM](https://github.com/microsoft/SimMIM).
+> **SSL: Masked Image Modeling**: See [SimMIM](https://github.com/microsoft/SimMIM).
 
+> **Mixture-of-Experts**: See [get_started](get_started.md#mixture-of-experts-support) for more instructions.
 
 ## Updates
+
+***06/03/2022***
+
+`News`: 
+
+1. Add **Swin-MoE**, a Mixture-of-Experts version of Swin Transformer which is based on the optimized Mixture-of-Experts implementation of [Tutel](https://github.com/microsoft/tutel). 
 
 ***05/12/2022***
 
@@ -131,6 +138,11 @@ Note:
 | SwinMLP-B | ImageNet-1K | 224x224 | 81.3 | 95.3 | 61M | 10.4G | 409 | [github](https://github.com/SwinTransformer/storage/releases/download/v1.0.5/swin_mlp_base_patch4_window7_224.pth)/[baidu](https://pan.baidu.com/s/1zww3dnbX3GxNiGfb-GwyUg)/[config](configs/swin/swin_mlp_base_patch4_window7_224.yaml) |
 
 Note: access code for `baidu` is `swin`. C24 means each head has 24 channels.
+
+**ImageNet-22K Pretrained Swin-MoE Models**
+
+- Please refer to [get_started](get_started.md#mixture-of-experts-support) for instructions on running Swin-MoE. 
+- Pretrained models for Swin-MoE can be found in [MODEL HUB](MODELHUB.md#imagenet-22k-pretrained-swin-moe-models)
 
 ## Main Results on Downstream Tasks
 
