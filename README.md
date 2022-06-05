@@ -32,7 +32,7 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 `News`: 
 
-1. Add **Swin-MoE**, a Mixture-of-Experts version of Swin Transformer which is based on the optimized Mixture-of-Experts implementation of [Tutel](https://github.com/microsoft/tutel). 
+1. Added **Swin-MoE**, the Mixture-of-Experts variant of Swin Transformer implemented using [Tutel](https://github.com/microsoft/tutel) (an optimized Mixture-of-Experts implementation). 
 
 ***05/12/2022***
 
