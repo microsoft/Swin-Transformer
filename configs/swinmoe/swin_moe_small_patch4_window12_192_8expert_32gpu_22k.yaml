@@ -1,0 +1,31 @@
+DATA:
+  DATASET: imagenet22K
+  IMG_SIZE: 192
+MODEL:
+  TYPE: swin_moe
+  NAME: swin_moe_small_patch4_window12_192_8expert_32gpu_22k
+  DROP_PATH_RATE: 0.2
+  SWIN_MOE:
+    EMBED_DIM: 96
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 3, 6, 12, 24 ]
+    WINDOW_SIZE: 12
+    MLP_FC2_BIAS: False
+    INIT_STD: 0.005
+    MOE_BLOCKS: [ [ -1 ], [ -1 ], [ 1, 3, 5, 7, 9, 11, 13, 15, 17 ], [ 1 ] ]
+    NUM_LOCAL_EXPERTS: -4
+    TOP_VALUE: 1
+    CAPACITY_FACTOR: 1.25
+    IS_GSHARD_LOSS: False
+    MOE_DROP: 0.1
+    AUX_LOSS_WEIGHT: 0.01
+TRAIN:
+  EPOCHS: 90
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.1
+  BASE_LR: 1.25e-4 # 4096 batch-size
+  WARMUP_LR: 1.25e-7
+  MIN_LR: 1.25e-6
+  CLIP_GRAD: 3.0
+TEST:
+  SHUFFLE: True
