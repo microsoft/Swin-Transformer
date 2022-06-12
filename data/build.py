@@ -15,6 +15,7 @@ from timm.data import Mixup
 from timm.data import create_transform
 
 from .cached_image_folder import CachedImageFolder
+from .imagenet22k_dataset import IN22KDATASET
 from .samplers import SubsetRandomSampler
 
 try:
@@ -31,6 +32,11 @@ try:
         else:
             # default bilinear, do we want to allow nearest?
             return InterpolationMode.BILINEAR
+
+
+    import timm.data.transforms as timm_transforms
+
+    timm_transforms._pil_interp = _pil_interp
 except:
     from timm.data.transforms import _pil_interp
 
@@ -57,7 +63,7 @@ def build_loader(config):
         sampler_val = torch.utils.data.SequentialSampler(dataset_val)
     else:
         sampler_val = torch.utils.data.distributed.DistributedSampler(
-            dataset_val, shuffle=False
+            dataset_val, shuffle=config.TEST.SHUFFLE
         )
 
     data_loader_train = torch.utils.data.DataLoader(
@@ -103,7 +109,13 @@ def build_dataset(is_train, config):
             dataset = datasets.ImageFolder(root, transform=transform)
         nb_classes = 1000
     elif config.DATA.DATASET == 'imagenet22K':
-        raise NotImplementedError("Imagenet-22K will come soon.")
+        prefix = 'ILSVRC2011fall_whole'
+        if is_train:
+            ann_file = prefix + "_map_train.txt"
+        else:
+            ann_file = prefix + "_map_val.txt"
+        dataset = IN22KDATASET(config.DATA.DATA_PATH, ann_file, transform)
+        nb_classes = 21841
     else:
         raise NotImplementedError("We only support ImageNet Now.")
 

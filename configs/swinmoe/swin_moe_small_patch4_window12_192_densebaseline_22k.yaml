@@ -1,0 +1,26 @@
+DATA:
+  DATASET: imagenet22K
+  IMG_SIZE: 192
+MODEL:
+  TYPE: swin_moe
+  NAME: swin_moe_small_patch4_window12_192_densebaseline_22k
+  DROP_PATH_RATE: 0.2
+  SWIN_MOE:
+    EMBED_DIM: 96
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 3, 6, 12, 24 ]
+    WINDOW_SIZE: 12
+    MLP_FC2_BIAS: False
+    MOE_BLOCKS: [ [ -1 ], [ -1 ], [ -1 ], [ -1 ] ]
+TRAIN:
+  EPOCHS: 90
+  WARMUP_EPOCHS: 10
+  WEIGHT_DECAY: 0.1
+  BASE_LR: 1.25e-4 # 4096 batch-size
+  WARMUP_LR: 1.25e-7
+  MIN_LR: 1.25e-6
+  CLIP_GRAD: 3.0
+  MOE:
+    SAVE_MASTER: True
+TEST:
+  SHUFFLE: True

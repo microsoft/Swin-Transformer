@@ -74,6 +74,50 @@ _C.MODEL.SWIN.QK_SCALE = None
 _C.MODEL.SWIN.APE = False
 _C.MODEL.SWIN.PATCH_NORM = True
 
+# Swin Transformer V2 parameters
+_C.MODEL.SWINV2 = CN()
+_C.MODEL.SWINV2.PATCH_SIZE = 4
+_C.MODEL.SWINV2.IN_CHANS = 3
+_C.MODEL.SWINV2.EMBED_DIM = 96
+_C.MODEL.SWINV2.DEPTHS = [2, 2, 6, 2]
+_C.MODEL.SWINV2.NUM_HEADS = [3, 6, 12, 24]
+_C.MODEL.SWINV2.WINDOW_SIZE = 7
+_C.MODEL.SWINV2.MLP_RATIO = 4.
+_C.MODEL.SWINV2.QKV_BIAS = True
+_C.MODEL.SWINV2.APE = False
+_C.MODEL.SWINV2.PATCH_NORM = True
+_C.MODEL.SWINV2.PRETRAINED_WINDOW_SIZES = [0, 0, 0, 0]
+
+# Swin Transformer MoE parameters
+_C.MODEL.SWIN_MOE = CN()
+_C.MODEL.SWIN_MOE.PATCH_SIZE = 4
+_C.MODEL.SWIN_MOE.IN_CHANS = 3
+_C.MODEL.SWIN_MOE.EMBED_DIM = 96
+_C.MODEL.SWIN_MOE.DEPTHS = [2, 2, 6, 2]
+_C.MODEL.SWIN_MOE.NUM_HEADS = [3, 6, 12, 24]
+_C.MODEL.SWIN_MOE.WINDOW_SIZE = 7
+_C.MODEL.SWIN_MOE.MLP_RATIO = 4.
+_C.MODEL.SWIN_MOE.QKV_BIAS = True
+_C.MODEL.SWIN_MOE.QK_SCALE = None
+_C.MODEL.SWIN_MOE.APE = False
+_C.MODEL.SWIN_MOE.PATCH_NORM = True
+_C.MODEL.SWIN_MOE.MLP_FC2_BIAS = True
+_C.MODEL.SWIN_MOE.INIT_STD = 0.02
+_C.MODEL.SWIN_MOE.PRETRAINED_WINDOW_SIZES = [0, 0, 0, 0]
+_C.MODEL.SWIN_MOE.MOE_BLOCKS = [[-1], [-1], [-1], [-1]]
+_C.MODEL.SWIN_MOE.NUM_LOCAL_EXPERTS = 1
+_C.MODEL.SWIN_MOE.TOP_VALUE = 1
+_C.MODEL.SWIN_MOE.CAPACITY_FACTOR = 1.25
+_C.MODEL.SWIN_MOE.COSINE_ROUTER = False
+_C.MODEL.SWIN_MOE.NORMALIZE_GATE = False
+_C.MODEL.SWIN_MOE.USE_BPR = True
+_C.MODEL.SWIN_MOE.IS_GSHARD_LOSS = False
+_C.MODEL.SWIN_MOE.GATE_NOISE = 1.0
+_C.MODEL.SWIN_MOE.COSINE_ROUTER_DIM = 256
+_C.MODEL.SWIN_MOE.COSINE_ROUTER_INIT_T = 0.5
+_C.MODEL.SWIN_MOE.MOE_DROP = 0.0
+_C.MODEL.SWIN_MOE.AUX_LOSS_WEIGHT = 0.01
+
 # Swin MLP parameters
 _C.MODEL.SWIN_MLP = CN()
 _C.MODEL.SWIN_MLP.PATCH_SIZE = 4
@@ -103,7 +147,7 @@ _C.TRAIN.CLIP_GRAD = 5.0
 _C.TRAIN.AUTO_RESUME = True
 # Gradient accumulation steps
 # could be overwritten by command line argument
-_C.TRAIN.ACCUMULATION_STEPS = 0
+_C.TRAIN.ACCUMULATION_STEPS = 1
 # Whether to use gradient checkpointing to save memory
 # could be overwritten by command line argument
 _C.TRAIN.USE_CHECKPOINT = False
@@ -126,6 +170,10 @@ _C.TRAIN.OPTIMIZER.BETAS = (0.9, 0.999)
 # SGD momentum
 _C.TRAIN.OPTIMIZER.MOMENTUM = 0.9
 
+# MoE
+_C.TRAIN.MOE = CN()
+# Only save model on master device
+_C.TRAIN.MOE.SAVE_MASTER = False
 # -----------------------------------------------------------------------------
 # Augmentation settings
 # -----------------------------------------------------------------------------
@@ -161,12 +209,14 @@ _C.TEST = CN()
 _C.TEST.CROP = True
 # Whether to use SequentialSampler as validation sampler
 _C.TEST.SEQUENTIAL = False
+_C.TEST.SHUFFLE = False
 
 # -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
-# Mixed precision opt level, if O0, no amp is used ('O0', 'O1', 'O2')
-# overwritten by command line argument
+# Enable Pytorch automatic mixed precision (amp).
+_C.AMP_ENABLE = True
+# [Deprecated] Mixed precision opt level of apex, if O0, no apex amp is used ('O0', 'O1', 'O2')
 _C.AMP_OPT_LEVEL = ''
 # Path to output folder, overwritten by command line argument
 _C.OUTPUT = ''
@@ -226,7 +276,11 @@ def update_config(config, args):
     if args.use_checkpoint:
         config.TRAIN.USE_CHECKPOINT = True
     if args.amp_opt_level:
-        config.AMP_OPT_LEVEL = args.amp_opt_level
+        print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
+        if args.amp_opt_level == 'O0':
+            config.AMP_ENABLE = False
+    if args.disable_amp:
+        config.AMP_ENABLE = False
     if args.output:
         config.OUTPUT = args.output
     if args.tag:
