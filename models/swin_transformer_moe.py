@@ -12,7 +12,12 @@ import torch.distributed as dist
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import numpy as np
-from tutel import moe as tutel_moe
+
+try:
+    from tutel import moe as tutel_moe
+except:
+    tutel_moe = None
+    print("Tutel has not been installed. To use Swin-MoE, please install Tutel; otherwise, just ignore this.")
 
 
 class Mlp(nn.Module):
