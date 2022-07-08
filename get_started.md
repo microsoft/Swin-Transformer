@@ -47,6 +47,12 @@ pip install timm==0.4.12
 pip install opencv-python==4.4.0.46 termcolor==1.1.0 yacs==0.1.8
 ```
 
+- Install fused window process for acceleration, activated by passing `--fused_window_process` in the running script
+```bash
+cd kernels/window_process
+python setup.py install #--user
+```
+
 ### Data preparation
 
 We use standard ImageNet dataset, you can download it from http://image-net.org/. We provide the following two ways to
