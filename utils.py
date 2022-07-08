@@ -124,6 +124,17 @@ def load_pretrained(config, model, logger):
             del state_dict['head.bias']
             logger.warning(f"Error in loading classifier head, re-init classifier head to 0")
 
+    # change for fuseddensegeludense
+    if config.FUSED_MLP:
+        for key in list(state_dict.keys()):
+            if 'mlp' in key:
+                names = key.split('.') # 'layers.0.blocks.0.mlp.fc1.weight' to 'layers.0.blocks.0.mlp.weight1'
+                new_names = names[:-2]
+                new_names.append(names[-1]+names[-2][-1])
+                new_key = '.'.join(new_names)
+                state_dict[new_key] = state_dict[key]
+                del state_dict[key]
+
     msg = model.load_state_dict(state_dict, strict=False)
     logger.warning(msg)
 

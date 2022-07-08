@@ -103,7 +103,7 @@ _C.TRAIN.CLIP_GRAD = 5.0
 _C.TRAIN.AUTO_RESUME = True
 # Gradient accumulation steps
 # could be overwritten by command line argument
-_C.TRAIN.ACCUMULATION_STEPS = 0
+_C.TRAIN.ACCUMULATION_STEPS = 1
 # Whether to use gradient checkpointing to save memory
 # could be overwritten by command line argument
 _C.TRAIN.USE_CHECKPOINT = False
@@ -185,6 +185,16 @@ _C.THROUGHPUT_MODE = False
 # local rank for DistributedDataParallel, given by command line argument
 _C.LOCAL_RANK = 0
 
+# Flags for acceleration strategies
+_C.FUSED_MLP = False
+_C.FUSED_DENSE = False
+_C.FUSED_LAYERNORM = False
+_C.FUSED_WINDOW_PROCESS = False
+_C.UNFUSED_MHA = False
+
+# ID for identify tensorboard logs
+_C.LOG_ID = 'debug'
+
 
 def _update_config_from_file(config, cfg_file):
     config.defrost()
@@ -235,6 +245,29 @@ def update_config(config, args):
         config.EVAL_MODE = True
     if args.throughput:
         config.THROUGHPUT_MODE = True
+    
+    # flags for fused kernels
+    ## apex: fused dense & fuseddensegeludense
+    if args.fused_dense:
+        config.FUSED_DENSE = True
+    if args.fused_mlp:
+        config.FUSED_MLP = True
+    ## apex: fused layernorm
+    if args.fused_layernorm:
+        config.FUSED_LAYERNORM = True
+    ## hand-written fused kernels
+    if args.fused_window_process:
+        config.FUSED_WINDOW_PROCESS = True
+    if args.unfused_mha:
+        config.UNFUSED_MHA = True
+
+    # Overwrite optimizer if not None
+    if args.optim:
+        config.TRAIN.OPTIMIZER.NAME = args.optim
+    # use tensorboard to record loss curves
+    config.LOG_ID = args.log_id
+    if not args.auto_resume:
+        config.TRAIN.AUTO_RESUME = False
 
     # set local rank for distributed training
     config.LOCAL_RANK = args.local_rank

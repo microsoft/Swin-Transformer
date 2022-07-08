@@ -10,7 +10,28 @@ import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
+# use apex fused layernorm
+import apex as amp
+# use apex fused dense 
+from apex import fused_dense
 
+try:
+    import os, sys
+
+    kernel_path = os.path.abspath(os.path.join('..'))
+    sys.path.append(kernel_path)
+    #from kernels.window_process.window_process import WindowProcess, WindowProcessReverse
+    #from kernels.unfused_mha.unfused_mha import FusedSoftmax
+    from kernels.fused_kernels import WindowProcess, WindowProcessReverse, FusedSoftmax
+
+except:
+    WindowProcess = None
+    WindowProcessReverse = None
+    print("[Warning] Fused window process have not been installed. Please refer to get_started.md for installation.")
+
+
+
+# fused_dense.FusedDenseGeluDense() will replace this part if setting fused_mlp=True
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -41,7 +62,10 @@ def window_partition(x, window_size):
     """
     B, H, W, C = x.shape
     x = x.view(B, H // window_size, window_size, W // window_size, window_size, C)
+    # ori
     windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
+    # new
+    # windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size * window_size, C)
     return windows
 
 
@@ -76,7 +100,7 @@ class WindowAttention(nn.Module):
         proj_drop (float, optional): Dropout ratio of output. Default: 0.0
     """
 
-    def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0.):
+    def __init__(self, dim, window_size, num_heads, num_windows, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0., fuseddense=False, unfused_mha=False):
 
         super().__init__()
         self.dim = dim
@@ -102,44 +126,75 @@ class WindowAttention(nn.Module):
         relative_position_index = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
         self.register_buffer("relative_position_index", relative_position_index)
 
-        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        self.fuseddense = fuseddense
+        if not fuseddense:
+            self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        else:
+            self.qkv = fused_dense.FusedDense(dim, dim*3, bias=qkv_bias)
+
+        self.attn_drop_prob = attn_drop
         self.attn_drop = nn.Dropout(attn_drop)
-        self.proj = nn.Linear(dim, dim)
+
+        if not fuseddense:
+            self.proj = nn.Linear(dim, dim)
+        else:
+            self.proj = fused_dense.FusedDense(dim, dim)
+
         self.proj_drop = nn.Dropout(proj_drop)
 
         trunc_normal_(self.relative_position_bias_table, std=.02)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x, mask=None):
+        ''' new parts for fused op'''
+        self.unfused_mha = unfused_mha
+        N = self.window_size[0] * self.window_size[1]
+        ''' end of my op '''
+
+    def forward(self, x, batch_size=192, mask=None):
         """
         Args:
             x: input features with shape of (num_windows*B, N, C)
             mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
         """
         B_, N, C = x.shape
-        qkv = self.qkv(x).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+
+        if not self.fuseddense:
+            qkv = self.qkv(x).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        else:
+            qkv = self.qkv(x.reshape(B_ * N, C)).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+
         q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
 
         q = q * self.scale
+
         attn = (q @ k.transpose(-2, -1))
 
         relative_position_bias = self.relative_position_bias_table[self.relative_position_index.view(-1)].view(
             self.window_size[0] * self.window_size[1], self.window_size[0] * self.window_size[1], -1)  # Wh*Ww,Wh*Ww,nH
         relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous()  # nH, Wh*Ww, Wh*Ww
-        attn = attn + relative_position_bias.unsqueeze(0)
 
-        if mask is not None:
-            nW = mask.shape[0]
-            attn = attn.view(B_ // nW, nW, self.num_heads, N, N) + mask.unsqueeze(1).unsqueeze(0)
-            attn = attn.view(-1, self.num_heads, N, N)
-            attn = self.softmax(attn)
+        if not self.unfused_mha:
+            if mask is not None:
+                attn = attn + relative_position_bias.unsqueeze(0)
+                nW = mask.shape[0]
+                attn = attn.view(B_ // nW, nW, self.num_heads, N, N) + mask.unsqueeze(1).unsqueeze(0)
+                attn = attn.view(-1, self.num_heads, N, N)
+                attn = self.softmax(attn)
+                attn = self.attn_drop(attn)
+            else:
+                attn = attn + relative_position_bias.unsqueeze(0)
+                attn = self.softmax(attn)
+                attn = self.attn_drop(attn)
         else:
-            attn = self.softmax(attn)
-
-        attn = self.attn_drop(attn)
+            attn = FusedSoftmax.apply(attn, relative_position_bias, mask, batch_size, B_ // batch_size, self.num_heads, N)
 
         x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
-        x = self.proj(x)
+
+        if not self.fuseddense:
+            x = self.proj(x)
+        else:
+            x = self.proj(x.reshape(B_ * N, C)).reshape(B_, N, C)
+
         x = self.proj_drop(x)
         return x
 
@@ -181,7 +236,8 @@ class SwinTransformerBlock(nn.Module):
 
     def __init__(self, dim, input_resolution, num_heads, window_size=7, shift_size=0,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0.,
-                 act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+                 act_layer=nn.GELU, norm_layer=nn.LayerNorm, fused_mlp=False, fuseddense=False, 
+                 fused_window_process=False, unfused_mha=False):
         super().__init__()
         self.dim = dim
         self.input_resolution = input_resolution
@@ -195,15 +251,25 @@ class SwinTransformerBlock(nn.Module):
             self.window_size = min(self.input_resolution)
         assert 0 <= self.shift_size < self.window_size, "shift_size must in 0-window_size"
 
+        # pre-compute window numbers
+        H, W = self.input_resolution
+        nW = (H // window_size) * (W // window_size)
+
         self.norm1 = norm_layer(dim)
         self.attn = WindowAttention(
-            dim, window_size=to_2tuple(self.window_size), num_heads=num_heads,
-            qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+            dim, window_size=to_2tuple(self.window_size), num_heads=num_heads, num_windows=nW,
+            qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop, 
+            fuseddense=fuseddense, unfused_mha=unfused_mha)
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+
+        self.fused_mlp = fused_mlp
+        if not fused_mlp:
+            self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        else:
+            self.mlp = fused_dense.FusedDenseGeluDense(in_features=dim, intermediate_features=mlp_hidden_dim, out_features=dim)
 
         if self.shift_size > 0:
             # calculate attention mask for SW-MSA
@@ -221,14 +287,21 @@ class SwinTransformerBlock(nn.Module):
                     img_mask[:, h, w, :] = cnt
                     cnt += 1
 
+            # ori 
             mask_windows = window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
             mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
+            # new
+            # mask_windows = window_partition(img_mask, self.window_size)  # nW, window_size * window_size, 1
+            # mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
+
             attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
             attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(attn_mask == 0, float(0.0))
         else:
             attn_mask = None
 
         self.register_buffer("attn_mask", attn_mask)
+        self.fused_window_process = fused_window_process
+
 
     def forward(self, x):
         H, W = self.input_resolution
@@ -239,33 +312,46 @@ class SwinTransformerBlock(nn.Module):
         x = self.norm1(x)
         x = x.view(B, H, W, C)
 
-        # cyclic shift
         if self.shift_size > 0:
-            shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
+            if not self.fused_window_process:
+                shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
+                x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
+                x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
+            else:
+                x_windows = WindowProcess.apply(x, B, H, W, C, -self.shift_size, self.window_size)
         else:
             shifted_x = x
-
-        # partition windows
-        x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
+            x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
         x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
 
+
         # W-MSA/SW-MSA
-        attn_windows = self.attn(x_windows, mask=self.attn_mask)  # nW*B, window_size*window_size, C
+        attn_windows = self.attn(x_windows, batch_size=B, mask=self.attn_mask)  # nW*B, window_size*window_size, C
 
         # merge windows
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
-        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
 
         # reverse cyclic shift
         if self.shift_size > 0:
-            x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
+            if not self.fused_window_process:
+                shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
+                x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
+            else:
+                x = WindowProcessReverse.apply(attn_windows, B, H, W, C, self.shift_size, self.window_size)
         else:
+            shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
             x = shifted_x
+        
         x = x.view(B, H * W, C)
 
         # FFN
         x = shortcut + self.drop_path(x)
-        x = x + self.drop_path(self.mlp(self.norm2(x)))
+        if not self.fused_mlp:
+            x = x + self.drop_path(self.mlp(self.norm2(x)))
+        else:
+            tmp_x = self.norm2(x).view(B * H * W, C)
+            tmp_x = self.mlp(tmp_x).view(B, H * W, C)
+            x = x + self.drop_path(tmp_x)
 
         return x
 
@@ -297,11 +383,16 @@ class PatchMerging(nn.Module):
         norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
     """
 
-    def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm):
+    def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm, fuseddense=False):
         super().__init__()
         self.input_resolution = input_resolution
         self.dim = dim
-        self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
+        if not fuseddense:
+            self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
+        else:
+            self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
+            # not support because the input dimension is [B, _, C]
+            #self.reduction = fused_dense.FusedDense(4 * dim, 2 * dim, bias=False)
         self.norm = norm_layer(4 * dim)
 
     def forward(self, x):
@@ -359,7 +450,8 @@ class BasicLayer(nn.Module):
 
     def __init__(self, dim, input_resolution, depth, num_heads, window_size,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,
-                 drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False):
+                 drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False, 
+                 fused_mlp=False, fuseddense=False, fused_window_process=False, unfused_mha=False):
 
         super().__init__()
         self.dim = dim
@@ -376,12 +468,14 @@ class BasicLayer(nn.Module):
                                  qkv_bias=qkv_bias, qk_scale=qk_scale,
                                  drop=drop, attn_drop=attn_drop,
                                  drop_path=drop_path[i] if isinstance(drop_path, list) else drop_path,
-                                 norm_layer=norm_layer)
+                                 norm_layer=norm_layer,
+                                 fused_mlp=fused_mlp, fuseddense=fuseddense,
+                                 fused_window_process=fused_window_process, unfused_mha=unfused_mha)
             for i in range(depth)])
 
         # patch merging layer
         if downsample is not None:
-            self.downsample = downsample(input_resolution, dim=dim, norm_layer=norm_layer)
+            self.downsample = downsample(input_resolution, dim=dim, norm_layer=norm_layer, fuseddense=fuseddense)
         else:
             self.downsample = None
 
@@ -420,18 +514,21 @@ class PatchEmbed(nn.Module):
 
     def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
         super().__init__()
-        img_size = to_2tuple(img_size)
-        patch_size = to_2tuple(patch_size)
-        patches_resolution = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]]
+        img_size = to_2tuple(img_size) # (224, 224)
+        patch_size = to_2tuple(patch_size) # (4, 4)
+        patches_resolution = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]] # (56, 56)
         self.img_size = img_size
         self.patch_size = patch_size
         self.patches_resolution = patches_resolution
-        self.num_patches = patches_resolution[0] * patches_resolution[1]
+        self.num_patches = patches_resolution[0] * patches_resolution[1] # 56x56=3136
 
         self.in_chans = in_chans
         self.embed_dim = embed_dim
 
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
+        self.conv_pad = 0
+        self.conv_stride = patch_size
+
         if norm_layer is not None:
             self.norm = norm_layer(embed_dim)
         else:
@@ -442,7 +539,11 @@ class PatchEmbed(nn.Module):
         # FIXME look at relaxing size constraints
         assert H == self.img_size[0] and W == self.img_size[1], \
             f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
+        # conv
         x = self.proj(x).flatten(2).transpose(1, 2)  # B Ph*Pw C
+        # ConvBias not work
+        # x = ConvBias(x, self.proj.weight, self.proj.bias.reshape(1, -1, 1, 1), self.conv_pad, self.conv_stride).flatten(2).transpose(1, 2)
+
         if self.norm is not None:
             x = self.norm(x)
         return x
@@ -479,6 +580,10 @@ class SwinTransformer(nn.Module):
         ape (bool): If True, add absolute position embedding to the patch embedding. Default: False
         patch_norm (bool): If True, add normalization after patch embedding. Default: True
         use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False
+        fused_mlp (bool): If True, use apex FusedDenseGeluDense to replace MLP for acceleration. Default: False
+        fuseddense (bool): If True, use apex FusedDense to replace nn.Linear for acceleration. Default: False
+        fused_window_process (bool): If True, use one kernel to fused window shift & window partition for acceleration, similar for the reversed part. Default: False
+        unfused_mha (bool): If True, fuse some operations (i.e., qk_result + relative_pos_bias + mask + softmax) in attention part. Default: False
     """
 
     def __init__(self, img_size=224, patch_size=4, in_chans=3, num_classes=1000,
@@ -486,7 +591,9 @@ class SwinTransformer(nn.Module):
                  window_size=7, mlp_ratio=4., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
-                 use_checkpoint=False, **kwargs):
+                 use_checkpoint=False, 
+                 fused_mlp=False, fuseddense=False, 
+                 fused_window_process=False, unfused_mha=False, **kwargs):
         super().__init__()
 
         self.num_classes = num_classes
@@ -507,12 +614,13 @@ class SwinTransformer(nn.Module):
 
         # absolute position embedding
         if self.ape:
-            self.absolute_pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
+            self.absolute_pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim)) # [1, num_patches, 96]
             trunc_normal_(self.absolute_pos_embed, std=.02)
 
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         # stochastic depth
+        # TODO: what is it?
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
 
         # build layers
@@ -530,12 +638,22 @@ class SwinTransformer(nn.Module):
                                drop_path=dpr[sum(depths[:i_layer]):sum(depths[:i_layer + 1])],
                                norm_layer=norm_layer,
                                downsample=PatchMerging if (i_layer < self.num_layers - 1) else None,
-                               use_checkpoint=use_checkpoint)
+                               use_checkpoint=use_checkpoint,
+                               fused_mlp=fused_mlp, fuseddense=fuseddense,
+                               fused_window_process=fused_window_process, unfused_mha=unfused_mha)
             self.layers.append(layer)
 
         self.norm = norm_layer(self.num_features)
         self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        #self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        if num_classes > 0:
+            if not fuseddense:
+                self.head = nn.Linear(self.num_features, num_classes)
+            else:
+                #self.head = nn.Linear(self.num_features, num_classes)
+                self.head = fused_dense.FusedDense(self.num_features, num_classes)
+        else:
+            self.head = nn.Identity()
 
         self.apply(self._init_weights)
 
@@ -547,6 +665,17 @@ class SwinTransformer(nn.Module):
         elif isinstance(m, nn.LayerNorm):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
+        # for fused dense
+        elif isinstance(m, fused_dense.FusedDenseGeluDense):
+            trunc_normal_(m.weight1, std=.02)
+            trunc_normal_(m.weight2, std=.02)
+            nn.init.constant_(m.bias1, 0)
+            nn.init.constant_(m.bias2, 0)
+        elif isinstance(m, fused_dense.FusedDense):
+            trunc_normal_(m.weight, std=.02)
+            if isinstance(m, fused_dense.FusedDense) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
 
     @torch.jit.ignore
     def no_weight_decay(self):
