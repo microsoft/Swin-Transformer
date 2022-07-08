@@ -70,7 +70,7 @@ python -m torch.distributed.launch --nproc_per_node 1 --master_port 12345 \
 > Use time cost in the plotted logs. Average first several iterations.
 
 | Code ver. | precision | batchsize | Time/iter | Image/second | speed-up |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | Official `78cec9a` | torch.cuda.amp | 128 | 0.4852 | 263.82 | 1x |
 | This repo (O0 baseline) | O0 | 128 | 0.8010 | 159.81 | 0.61x |
 | This repo (+) | O2 | 128 | 0.3837 | 333.61 | 1.27x |

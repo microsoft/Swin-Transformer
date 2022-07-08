@@ -3,6 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# launch bash
+*.sh
+
+# logs and outputs
+logs/
+output/
+
 # C extensions
 *.so
 
