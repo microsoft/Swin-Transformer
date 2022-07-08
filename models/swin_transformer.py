@@ -10,10 +10,17 @@ import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
-import os, sys
-kernel_path = os.path.abspath(os.path.join('..'))
-sys.path.append(kernel_path)
-from kernels.window_process.window_process import WindowProcess, WindowProcessReverse
+try:
+    import os, sys
+
+    kernel_path = os.path.abspath(os.path.join('..'))
+    sys.path.append(kernel_path)
+    from kernels.window_process.window_process import WindowProcess, WindowProcessReverse
+
+except:
+    WindowProcess = None
+    WindowProcessReverse = None
+    print("[Warning] Fused window process have not been installed. Please refer to get_started.md for installation.")
 
 
 class Mlp(nn.Module):
@@ -259,7 +266,7 @@ class SwinTransformerBlock(nn.Module):
             shifted_x = x
             # partition windows
             x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
-        
+
         x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
 
         # W-MSA/SW-MSA
@@ -377,7 +384,8 @@ class BasicLayer(nn.Module):
 
     def __init__(self, dim, input_resolution, depth, num_heads, window_size,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,
-                 drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False, fused_window_process=False):
+                 drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False,
+                 fused_window_process=False):
 
         super().__init__()
         self.dim = dim
@@ -506,8 +514,7 @@ class SwinTransformer(nn.Module):
                  window_size=7, mlp_ratio=4., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
-                 use_checkpoint=False, 
-                 fused_window_process=False, **kwargs):
+                 use_checkpoint=False, fused_window_process=False, **kwargs):
         super().__init__()
 
         self.num_classes = num_classes
