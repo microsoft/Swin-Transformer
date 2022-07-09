@@ -26,17 +26,23 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 > **Mixture-of-Experts**: See [get_started](get_started.md#mixture-of-experts-support) for more instructions.
 
+> **Feature-Distillation**: Will appear in [Feature-Distillation](https://github.com/SwinTransformer/Feature-Distillation).
+
 ## Updates
 
-***06/03/2022***
+***07/09/2022***
 
 `News`: 
+
+1. SwinV2-G achieves `61.4 mIoU` on ADE20K semantic segmentation (+1.5 mIoU over the previous SwinV2-G model), using an additional [feature distillation (FD)](https://github.com/SwinTransformer/Feature-Distillation) approach, setting a new recrod on this benchmark. FD is a approach that can generally improve the fine-tuning performance of various pre-trained models, including DeiT, DINO, and CLIP. Particularly, it improves CLIP pre-trained ViT-L by +1.6% to reach '89.0%' on ImageNet-1K image classification, which is the most accurate ViT-L model.
+2. Merged a PR from **Nvidia** that links to faster Swin Transformer inference that have significant speed improvements on `T4 and A100 GPUs`.
+3. Merged a PR from **Nvidia** that enables an option to use `pure FP16 (Apex O2)` in training, while almost maintaining the accuracy.
+
+***06/03/2022***
 
 1. Added **Swin-MoE**, the Mixture-of-Experts variant of Swin Transformer implemented using [Tutel](https://github.com/microsoft/tutel) (an optimized Mixture-of-Experts implementation). **Swin-MoE** is introduced in the [TuTel](https://arxiv.org/abs/2206.03382) paper.
 
 ***05/12/2022***
-
-`News`: 
 
 1. Pretrained models of [Swin Transformer V2](https://arxiv.org/abs/2111.09883) on ImageNet-1K and ImageNet-22K are released. 
 2. ImageNet-22K pretrained models for Swin-V1-Tiny and Swin-V2-Small are released.
