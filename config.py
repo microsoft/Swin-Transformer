@@ -236,6 +236,7 @@ _C.THROUGHPUT_MODE = False
 _C.LOCAL_RANK = 0
 # for acceleration
 _C.FUSED_WINDOW_PROCESS = False
+_C.FUSED_LAYERNORM = False
 
 
 def _update_config_from_file(config, cfg_file):
@@ -295,6 +296,11 @@ def update_config(config, args):
     # for acceleration
     if args.fused_window_process:
         config.FUSED_WINDOW_PROCESS = True
+    if args.fused_layernorm:
+        config.FUSED_LAYERNORM = True
+    ## Overwrite optimizer if not None, currently we use it for [fused_adam, fused_lamb]
+    if args.optim:
+        config.TRAIN.OPTIMIZER.NAME = args.optim
 
     # set local rank for distributed training
     config.LOCAL_RANK = args.local_rank
