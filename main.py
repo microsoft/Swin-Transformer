@@ -66,6 +66,9 @@ def parse_option():
     # distributed training
     parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
 
+    # for acceleration
+    parser.add_argument('--fused_window_process', action='store_true', help='Fused window shift & window partition, similar for reversed part.')
+
     args, unparsed = parser.parse_known_args()
 
     config = get_config(args)

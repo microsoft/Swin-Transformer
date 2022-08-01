@@ -234,6 +234,8 @@ _C.EVAL_MODE = False
 _C.THROUGHPUT_MODE = False
 # local rank for DistributedDataParallel, given by command line argument
 _C.LOCAL_RANK = 0
+# for acceleration
+_C.FUSED_WINDOW_PROCESS = False
 
 
 def _update_config_from_file(config, cfg_file):
@@ -289,6 +291,10 @@ def update_config(config, args):
         config.EVAL_MODE = True
     if args.throughput:
         config.THROUGHPUT_MODE = True
+    
+    # for acceleration
+    if args.fused_window_process:
+        config.FUSED_WINDOW_PROCESS = True
 
     # set local rank for distributed training
     config.LOCAL_RANK = args.local_rank
