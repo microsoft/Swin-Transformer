@@ -16,8 +16,12 @@ def build_model(config):
 
     # accelerate layernorm
     if config.FUSED_LAYERNORM:
-        import apex as amp
-        layernorm = amp.normalization.FusedLayerNorm
+        try:
+            import apex as amp
+            layernorm = amp.normalization.FusedLayerNorm
+        except:
+            layernorm = None
+            print("To use FusedLayerNorm, please install apex.")
     else:
         import torch.nn as nn
         layernorm = nn.LayerNorm

@@ -6,7 +6,14 @@
 # --------------------------------------------------------
 
 from torch import optim as optim
-from apex.optimizers import FusedAdam, FusedLAMB
+
+try:
+    from apex.optimizers import FusedAdam, FusedLAMB
+except:
+    FusedAdam = None
+    FusedLAMB = None
+    print("To use FusedLAMB or FusedAdam, please install apex.")
+
 
 def build_optimizer(config, model):
     """
@@ -30,10 +37,10 @@ def build_optimizer(config, model):
                                 lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
     elif opt_lower == 'fused_adam':
         optimizer = FusedAdam(parameters, eps=config.TRAIN.OPTIMIZER.EPS, betas=config.TRAIN.OPTIMIZER.BETAS,
-                                lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
+                              lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
     elif opt_lower == 'fused_lamb':
         optimizer = FusedLAMB(parameters, eps=config.TRAIN.OPTIMIZER.EPS, betas=config.TRAIN.OPTIMIZER.BETAS,
-                                lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
+                              lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
 
     return optimizer
 

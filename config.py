@@ -292,7 +292,7 @@ def update_config(config, args):
         config.EVAL_MODE = True
     if args.throughput:
         config.THROUGHPUT_MODE = True
-    
+
     # for acceleration
     if args.fused_window_process:
         config.FUSED_WINDOW_PROCESS = True
