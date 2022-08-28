@@ -67,7 +67,12 @@ def parse_option():
     parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
 
     # for acceleration
-    parser.add_argument('--fused_window_process', action='store_true', help='Fused window shift & window partition, similar for reversed part.')
+    parser.add_argument('--fused_window_process', action='store_true',
+                        help='Fused window shift & window partition, similar for reversed part.')
+    parser.add_argument('--fused_layernorm', action='store_true', help='Use fused layernorm.')
+    ## overwrite optimizer in config (*.yaml) if specified, e.g., fused_adam/fused_lamb
+    parser.add_argument('--optim', type=str,
+                        help='overwrite optimizer if provided, can be adamw/sgd/fused_adam/fused_lamb.')
 
     args, unparsed = parser.parse_known_args()
 
