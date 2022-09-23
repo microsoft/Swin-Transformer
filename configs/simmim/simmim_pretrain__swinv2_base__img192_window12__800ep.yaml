@@ -1,0 +1,30 @@
+MODEL:
+  TYPE: swinv2
+  NAME: simmim_pretrain
+  DROP_PATH_RATE: 0.1
+  SIMMIM:
+    NORM_TARGET:
+      ENABLE: True
+      PATCH_SIZE: 47
+  SWINV2:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 12
+DATA:
+  IMG_SIZE: 192
+  MASK_PATCH_SIZE: 32
+  MASK_RATIO: 0.6
+TRAIN:
+  EPOCHS: 800
+  WARMUP_EPOCHS: 10
+  BASE_LR: 1e-4
+  WARMUP_LR: 5e-7
+  WEIGHT_DECAY: 0.05
+  LR_SCHEDULER:
+    NAME: 'multistep'
+    GAMMA: 0.1
+    MULTISTEPS: [700,]
+PRINT_FREQ: 100
+SAVE_FREQ: 5
+TAG: simmim_pretrain__swinv2_base__img192_window12__800ep

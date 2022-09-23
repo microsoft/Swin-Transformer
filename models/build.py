@@ -9,9 +9,10 @@ from .swin_transformer import SwinTransformer
 from .swin_transformer_v2 import SwinTransformerV2
 from .swin_transformer_moe import SwinTransformerMoE
 from .swin_mlp import SwinMLP
+from .simmim import build_simmim
 
 
-def build_model(config):
+def build_model(config, is_pretrain=False):
     model_type = config.MODEL.TYPE
 
     # accelerate layernorm
@@ -25,6 +26,10 @@ def build_model(config):
     else:
         import torch.nn as nn
         layernorm = nn.LayerNorm
+
+    if is_pretrain:
+        model = build_simmim(config)
+        return model
 
     if model_type == 'swin':
         model = SwinTransformer(img_size=config.DATA.IMG_SIZE,

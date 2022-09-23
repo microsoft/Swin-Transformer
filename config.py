@@ -38,6 +38,11 @@ _C.DATA.PIN_MEMORY = True
 # Number of data loading threads
 _C.DATA.NUM_WORKERS = 8
 
+# [SimMIM] Mask patch size for MaskGenerator
+_C.DATA.MASK_PATCH_SIZE = 32
+# [SimMIM] Mask ratio for MaskGenerator
+_C.DATA.MASK_RATIO = 0.6
+
 # -----------------------------------------------------------------------------
 # Model settings
 # -----------------------------------------------------------------------------
@@ -130,6 +135,12 @@ _C.MODEL.SWIN_MLP.MLP_RATIO = 4.
 _C.MODEL.SWIN_MLP.APE = False
 _C.MODEL.SWIN_MLP.PATCH_NORM = True
 
+# [SimMIM] Norm target during training
+_C.MODEL.SIMMIM = CN()
+_C.MODEL.SIMMIM.NORM_TARGET = CN()
+_C.MODEL.SIMMIM.NORM_TARGET.ENABLE = False
+_C.MODEL.SIMMIM.NORM_TARGET.PATCH_SIZE = 47
+
 # -----------------------------------------------------------------------------
 # Training settings
 # -----------------------------------------------------------------------------
@@ -159,6 +170,9 @@ _C.TRAIN.LR_SCHEDULER.NAME = 'cosine'
 _C.TRAIN.LR_SCHEDULER.DECAY_EPOCHS = 30
 # LR decay rate, used in StepLRScheduler
 _C.TRAIN.LR_SCHEDULER.DECAY_RATE = 0.1
+# [SimMIM] Gamma / Multi steps value, used in MultiStepLRScheduler
+_C.TRAIN.LR_SCHEDULER.GAMMA = 0.1
+_C.TRAIN.LR_SCHEDULER.MULTISTEPS = []
 
 # Optimizer
 _C.TRAIN.OPTIMIZER = CN()
@@ -169,6 +183,9 @@ _C.TRAIN.OPTIMIZER.EPS = 1e-8
 _C.TRAIN.OPTIMIZER.BETAS = (0.9, 0.999)
 # SGD momentum
 _C.TRAIN.OPTIMIZER.MOMENTUM = 0.9
+
+# [SimMIM] Layer decay for fine-tuning
+_C.TRAIN.LAYER_DECAY = 1.0
 
 # MoE
 _C.TRAIN.MOE = CN()
@@ -214,6 +231,9 @@ _C.TEST.SHUFFLE = False
 # -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
+# [SimMIM] Whether to enable pytorch amp, overwritten by command line argument
+_C.ENABLE_AMP = False
+
 # Enable Pytorch automatic mixed precision (amp).
 _C.AMP_ENABLE = True
 # [Deprecated] Mixed precision opt level of apex, if O0, no apex amp is used ('O0', 'O1', 'O2')
@@ -261,45 +281,54 @@ def update_config(config, args):
     if args.opts:
         config.merge_from_list(args.opts)
 
+    def _check_args(name):
+        if hasattr(args, name) and eval(f'args.{name}'):
+            return True
+        return False
+
     # merge from specific arguments
-    if args.batch_size:
+    if _check_args('batch_size'):
         config.DATA.BATCH_SIZE = args.batch_size
-    if args.data_path:
+    if _check_args('data_path'):
         config.DATA.DATA_PATH = args.data_path
-    if args.zip:
+    if _check_args('zip'):
         config.DATA.ZIP_MODE = True
-    if args.cache_mode:
+    if _check_args('cache_mode'):
         config.DATA.CACHE_MODE = args.cache_mode
-    if args.pretrained:
+    if _check_args('pretrained'):
         config.MODEL.PRETRAINED = args.pretrained
-    if args.resume:
+    if _check_args('resume'):
         config.MODEL.RESUME = args.resume
-    if args.accumulation_steps:
+    if _check_args('accumulation_steps'):
         config.TRAIN.ACCUMULATION_STEPS = args.accumulation_steps
-    if args.use_checkpoint:
+    if _check_args('use_checkpoint'):
         config.TRAIN.USE_CHECKPOINT = True
-    if args.amp_opt_level:
+    if _check_args('amp_opt_level'):
         print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
         if args.amp_opt_level == 'O0':
             config.AMP_ENABLE = False
-    if args.disable_amp:
+    if _check_args('disable_amp'):
         config.AMP_ENABLE = False
-    if args.output:
+    if _check_args('output'):
         config.OUTPUT = args.output
-    if args.tag:
+    if _check_args('tag'):
         config.TAG = args.tag
-    if args.eval:
+    if _check_args('eval'):
         config.EVAL_MODE = True
-    if args.throughput:
+    if _check_args('throughput'):
         config.THROUGHPUT_MODE = True
 
+    # [SimMIM]
+    if _check_args('enable_amp'):
+        config.ENABLE_AMP = args.enable_amp
+
     # for acceleration
-    if args.fused_window_process:
+    if _check_args('fused_window_process'):
         config.FUSED_WINDOW_PROCESS = True
-    if args.fused_layernorm:
+    if _check_args('fused_layernorm'):
         config.FUSED_LAYERNORM = True
     ## Overwrite optimizer if not None, currently we use it for [fused_adam, fused_lamb]
-    if args.optim:
+    if _check_args('optim'):
         config.TRAIN.OPTIMIZER.NAME = args.optim
 
     # set local rank for distributed training

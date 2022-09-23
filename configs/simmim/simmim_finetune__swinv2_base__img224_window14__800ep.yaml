@@ -1,0 +1,23 @@
+MODEL:
+  TYPE: swinv2
+  NAME: simmim_finetune
+  DROP_PATH_RATE: 0.1
+  SWINV2:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 14
+    PRETRAINED_WINDOW_SIZES: [ 12, 12, 12, 6 ]
+DATA:
+  IMG_SIZE: 224
+TRAIN:
+  EPOCHS: 100
+  WARMUP_EPOCHS: 20
+  BASE_LR: 1.25e-3
+  WARMUP_LR: 2.5e-7
+  MIN_LR: 2.5e-7
+  WEIGHT_DECAY: 0.05
+  LAYER_DECAY: 0.75
+PRINT_FREQ: 100
+SAVE_FREQ: 5
+TAG: simmim_finetune__swinv2_base__img224_window14__800ep
