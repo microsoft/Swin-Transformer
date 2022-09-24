@@ -40,7 +40,7 @@ class ZipReader(object):
         pos_at = path.index('@')
         assert pos_at != -1, "character '@' is not found from the given path '%s'" % path
 
-        zip_path = path[0: pos_at]
+        zip_path = path[:pos_at]
         folder_path = path[pos_at + 1:]
         folder_path = str.strip(folder_path, '/')
         return zip_path, folder_path
@@ -86,8 +86,7 @@ class ZipReader(object):
     def read(path):
         zip_path, path_img = ZipReader.split_zip_style_path(path)
         zfile = ZipReader.get_zipfile(zip_path)
-        data = zfile.read(path_img)
-        return data
+        return zfile.read(path_img)
 
     @staticmethod
     def imread(path):

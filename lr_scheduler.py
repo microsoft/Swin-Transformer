@@ -82,21 +82,16 @@ class LinearLRScheduler(Scheduler):
 
     def _get_lr(self, t):
         if t < self.warmup_t:
-            lrs = [self.warmup_lr_init + t * s for s in self.warmup_steps]
-        else:
-            t = t - self.warmup_t
-            total_t = self.t_initial - self.warmup_t
-            lrs = [v - ((v - v * self.lr_min_rate) * (t / total_t)) for v in self.base_values]
-        return lrs
+            return [self.warmup_lr_init + t * s for s in self.warmup_steps]
+        t = t - self.warmup_t
+        total_t = self.t_initial - self.warmup_t
+        return [
+            v - ((v - v * self.lr_min_rate) * (t / total_t))
+            for v in self.base_values
+        ]
 
     def get_epoch_values(self, epoch: int):
-        if self.t_in_epochs:
-            return self._get_lr(epoch)
-        else:
-            return None
+        return self._get_lr(epoch) if self.t_in_epochs else None
 
     def get_update_values(self, num_updates: int):
-        if not self.t_in_epochs:
-            return self._get_lr(num_updates)
-        else:
-            return None
+        return None if self.t_in_epochs else self._get_lr(num_updates)
