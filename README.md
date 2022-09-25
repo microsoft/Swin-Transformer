@@ -32,9 +32,9 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 ***09/24/2022***
 
-1. Introduce [SimMIM](https://github.com/microsoft/SimMIM), a **Masked Image Modeling** pre-training approach applicable to Swin and SwinV2 (and also applicable for ViT, even ResNet). Please refer to [get started for SimMIM](get_started_simmim.md) to use SimMIM for pre-training.
+1. Introduce [SimMIM](https://github.com/microsoft/SimMIM), a **Masked Image Modeling** pre-training approach applicable to Swin and SwinV2 (and also applicable for ViT, even ResNet). Please refer to [get started for SimMIM](get_started.md#simmim-support) to use SimMIM for pre-training.
 
-2. Release a series of Swin and SwinV2 models pre-trained with SimMIM and fine-tuned on ImageNet-1K. In particular, a series of SwinV2 models in [data scaling study](https://arxiv.org/abs/2206.04664). The sizes of models range from 50M (SwinV2-Small) to 1B (SwinV2-giant), and the models are obtained using datasets of different sizes from ImageNet-1K 10% to ImageNet-22K at training iterations of 125k / 250k / 500k. Details could be found in [MODELHUB for SimMIM](MODELHUB_simmim.md) Hopefully these models will facilitate the study of MIM.
+2. Release a series of Swin and SwinV2 models pre-trained with SimMIM and fine-tuned on ImageNet-1K. In particular, a series of SwinV2 models in [data scaling study](https://arxiv.org/abs/2206.04664). The sizes of models range from 50M (SwinV2-Small) to 1B (SwinV2-giant), and the models are obtained using datasets of different sizes from ImageNet-1K 10% to ImageNet-22K at training iterations of 125k / 250k / 500k. Details could be found in [MODELHUB for SimMIM](MODELHUB.md#simmim-pretrained-swin-v2-models) Hopefully these models will facilitate the study of MIM.
 
 ***07/09/2022***
 
