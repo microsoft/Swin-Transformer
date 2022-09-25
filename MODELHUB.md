@@ -72,10 +72,10 @@ Note: C24 means each head has 24 channels.
 
 ## Simmim Pretrained Swin-V2 Models
 
-1. **model size** only for backbone, not including the decoder or classification head.
-2. **batch size** of all models is 2048.
-3. **validation loss** statistics on ImageNet-1K validation set.
-4. **fine-tuned acc@1** for top-1 accuracy fine-tuned on ImageNet-1K.
+- **model size** counts only the backbone weights and does not include weights in the decoders / classification heads
+- **batch size** of all models is set 2048.
+- **validation loss** is counted on the ImageNet-1K validation set.
+- **fine-tuned acc@1** means the top-1 accuracy on the ImageNet-1K validation set by fine-tuning.
 
 | name | model size | pre-train dataset | pre-train iterations | validation loss | fine-tuned acc@1 | pre-trained model | fine-tuned model |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
