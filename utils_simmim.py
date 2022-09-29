@@ -20,9 +20,16 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, scaler, logger):
             config.MODEL.RESUME, map_location='cpu', check_hash=True)
     else:
         checkpoint = torch.load(config.MODEL.RESUME, map_location='cpu')
+
+    # re-map keys due to name change (only for loading provided models)
+    rpe_mlp_keys = [k for k in checkpoint['model'].keys() if "rpe_mlp" in k]
+    for k in rpe_mlp_keys:
+        checkpoint['model'][k.replace('rpe_mlp', 'cpb_mlp')] = checkpoint['model'].pop(k)
+    
     msg = model.load_state_dict(checkpoint['model'], strict=False)
     logger.info(msg)
 
+    max_accuracy = 0.0
     if not config.EVAL_MODE and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'scaler' in checkpoint and 'epoch' in checkpoint:
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
