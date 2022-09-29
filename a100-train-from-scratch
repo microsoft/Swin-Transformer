@@ -1,0 +1,10 @@
+#!/bin/bash
+
+python -m torch.distributed.launch \
+        --nproc_per_node 1 \
+        --master_port 12345 \
+        main.py \
+        --cfg configs/swin/swin_tiny_patch4_window7_224.yaml \
+        --fused_window_process \
+        --batch-size 128 \
+        --data-path /data/work/dataset/imagenet_100cls
