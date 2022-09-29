@@ -189,6 +189,11 @@ def remap_pretrained_keys_swin(model, checkpoint_model, logger):
     for k in relative_coords_table_keys:
         del checkpoint_model[k]
 
+    # re-map keys due to name change
+    rpe_mlp_keys = [k for k in checkpoint_model.keys() if "rpe_mlp" in k]
+    for k in rpe_mlp_keys:
+        checkpoint_model[k.replace('rpe_mlp', 'cpb_mlp')] = checkpoint_model.pop(k)
+
     # delete attn_mask since we always re-init it
     attn_mask_keys = [k for k in checkpoint_model.keys() if "attn_mask" in k]
     for k in attn_mask_keys:
