@@ -1,16 +1,16 @@
-import os
 import json
-import torch.utils.data as data
-import numpy as np
-from PIL import Image
-
+import os
 import warnings
+
+import numpy as np
+import torch.utils.data as data
+from PIL import Image
 
 warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
 
 
 class IN22KDATASET(data.Dataset):
-    def __init__(self, root, ann_file='', transform=None, target_transform=None):
+    def __init__(self, root, ann_file="", transform=None, target_transform=None):
         super(IN22KDATASET, self).__init__()
 
         self.data_path = root
@@ -40,7 +40,7 @@ class IN22KDATASET(data.Dataset):
         idb = self.database[index]
 
         # images
-        images = self._load_image(self.data_path + '/' + idb[0]).convert('RGB')
+        images = self._load_image(self.data_path + "/" + idb[0]).convert("RGB")
         if self.transform is not None:
             images = self.transform(images)
 
