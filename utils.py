@@ -7,6 +7,7 @@
 
 import os
 
+import preface.dict
 import torch
 import torch.distributed as dist
 from torch._six import inf
@@ -288,3 +289,26 @@ class NativeScalerWithGradNormCount:
 
     def load_state_dict(self, state_dict):
         self._scaler.load_state_dict(state_dict)
+
+
+def to_hparams(cfg):
+    hparams = {}
+    for key, value in cfg.items():
+        key = key.lower()
+        if (
+            isinstance(value, int)
+            or isinstance(value, float)
+            or isinstance(value, str)
+            or isinstance(value, bool)
+            or isinstance(value, torch.Tensor)
+            or value is None
+        ):
+            hparams[key] = value
+        elif isinstance(value, dict):
+            hparams[key] = to_hparams(value)
+        elif isinstance(value, list) or isinstance(value, tuple):
+            hparams[key] = "[" + ", ".join(repr(v) for v in value) + "]"
+        else:
+            raise ValueError(f"Don't know how to handle {key}: {value}!")
+
+    return preface.dict.flattened(hparams)

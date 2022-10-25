@@ -54,8 +54,16 @@ class TensorboardWriter:
     writer = None
 
     def __init__(self, output_dir, dist_rank):
+        self.output_dir = output_dir
+
         if dist_rank == 0:
-            self.writer = SummaryWriter(log_dir=output_dir)
+            self.writer = SummaryWriter(log_dir=self.output_dir)
+
+    def add_hparams(self, hparams, metrics):
+        if self.writer is None:
+            return
+
+        self.writer.add_hparams(hparams, metrics, run_name=self.output_dir)
 
     def log(self, items, step):
         if self.writer is None:

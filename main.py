@@ -38,6 +38,7 @@ from utils import (
     load_pretrained,
     reduce_tensor,
     save_checkpoint,
+    to_hparams,
 )
 
 
@@ -380,6 +381,7 @@ def train_one_epoch(
         f"EPOCH {epoch} training took {datetime.timedelta(seconds=int(epoch_time))}"
     )
     tb_writer.log({"train_time": epoch_time}, epoch)
+    tb_writer.add_hparams(to_hparams(config), stats)
 
 
 @torch.no_grad()
