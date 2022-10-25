@@ -16,18 +16,24 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
-from timm.utils import AverageMeter, accuracy
+from timm.loss import LabelSmoothingCrossEntropy
+from timm.utils import AverageMeter
 
 from config import get_config
 from data import build_loader
-from logger import create_logger
+from hierarchical import (
+    FineGrainedCrossEntropyLoss,
+    HierarchicalCrossEntropyLoss,
+    accuracy,
+)
+from logger import TensorboardWriter, create_logger
 from lr_scheduler import build_scheduler
 from models import build_model
 from optimizer import build_optimizer
 from utils import (
     NativeScalerWithGradNormCount,
     auto_resume_helper,
+    batch_size,
     load_checkpoint,
     load_pretrained,
     reduce_tensor,
@@ -105,14 +111,6 @@ def parse_option():
         "--throughput", action="store_true", help="Test throughput only"
     )
 
-    # distributed training
-    parser.add_argument(
-        "--local_rank",
-        type=int,
-        required=True,
-        help="local rank for DistributedDataParallel",
-    )
-
     # for acceleration
     parser.add_argument(
         "--fused_window_process",
@@ -160,7 +158,12 @@ def main(config):
 
     optimizer = build_optimizer(config, model)
     model = torch.nn.parallel.DistributedDataParallel(
-        model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False
+        model,
+        device_ids=[config.LOCAL_RANK],
+        broadcast_buffers=False,
+        find_unused_parameters=False,
+        gradient_as_bucket_view=True,
+        static_graph=True,
     )
     loss_scaler = NativeScalerWithGradNormCount()
 
@@ -171,13 +174,22 @@ def main(config):
     else:
         lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
 
-    if config.AUG.MIXUP > 0.0:
-        # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
-    elif config.MODEL.LABEL_SMOOTHING > 0.0:
+    if config.AUG.MIXUP == 0 and config.MODEL.LABEL_SMOOTHING > 0.0:
+        if config.HIERARHICAL:
+            raise NotImplementedError(
+                "We don't support hierarhical loss with label smoothing and no mixup."
+            )
         criterion = LabelSmoothingCrossEntropy(smoothing=config.MODEL.LABEL_SMOOTHING)
     else:
-        criterion = torch.nn.CrossEntropyLoss()
+        # If we have mixup, smoothing is handled with mixup label transform
+        if config.HIERARHICAL:
+            criterion = HierarchicalCrossEntropyLoss(
+                coeffs=config.TRAIN.HIERARCHICAL_COEFFS
+            ).to(torch.cuda.current_device())
+        else:
+            criterion = torch.nn.CrossEntropyLoss()
+
+    logger.info("Loss function: %s", criterion)
 
     max_accuracy = 0.0
 
@@ -199,7 +211,9 @@ def main(config):
         max_accuracy = load_checkpoint(
             config, model_without_ddp, optimizer, lr_scheduler, loss_scaler, logger
         )
-        acc1, acc5, loss = validate(config, data_loader_val, model)
+        acc1, acc5, loss = validate(
+            config, data_loader_val, model, config.TRAIN.START_EPOCH - 1
+        )
         logger.info(
             f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
         )
@@ -208,7 +222,9 @@ def main(config):
 
     if config.MODEL.PRETRAINED and (not config.MODEL.RESUME):
         load_pretrained(config, model_without_ddp, logger)
-        acc1, acc5, loss = validate(config, data_loader_val, model)
+        acc1, acc5, loss = validate(
+            config, data_loader_val, model, config.TRAIN.START_EPOCH - 1
+        )
         logger.info(
             f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
         )
@@ -247,7 +263,7 @@ def main(config):
                 logger,
             )
 
-        acc1, acc5, loss = validate(config, data_loader_val, model)
+        acc1, acc5, loss = validate(config, data_loader_val, model, epoch)
         logger.info(
             f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
         )
@@ -307,14 +323,20 @@ def train_one_epoch(
         )
         if (idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
             optimizer.zero_grad()
-            lr_scheduler.step_update(
-                (epoch * num_steps + idx) // config.TRAIN.ACCUMULATION_STEPS
-            )
+            if lr_scheduler is not None:
+                lr_scheduler.step_update(
+                    (epoch * num_steps + idx) // config.TRAIN.ACCUMULATION_STEPS
+                )
         loss_scale_value = loss_scaler.state_dict()["scale"]
 
         torch.cuda.synchronize()
 
-        loss_meter.update(loss.item(), targets.size(0))
+        # We divide by accumulation steps (not sure why) but it makes
+        # the logged values look weird. So I multiply by it to fix that.
+        loss_meter.update(
+            loss.item() * config.TRAIN.ACCUMULATION_STEPS, batch_size(targets)
+        )
+
         if grad_norm is not None:  # loss_scaler return None if not update
             norm_meter.update(grad_norm)
         scaler_meter.update(loss_scale_value)
@@ -328,22 +350,44 @@ def train_one_epoch(
             etas = batch_time.avg * (num_steps - idx)
             logger.info(
                 f"Train: [{epoch}/{config.TRAIN.EPOCHS}][{idx}/{num_steps}]\t"
-                f"eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t wd {wd:.4f}\t"
+                f"eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t"
+                f"wd {wd:.4f}\t"
                 f"time {batch_time.val:.4f} ({batch_time.avg:.4f})\t"
                 f"loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t"
                 f"grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t"
                 f"loss_scale {scaler_meter.val:.4f} ({scaler_meter.avg:.4f})\t"
                 f"mem {memory_used:.0f}MB"
             )
+            stats = {
+                "train_batch_time": batch_time.val,
+                "train_loss": loss_meter.val,
+                "train_grad_norm": norm_meter.val,
+                "train_loss_scale": scaler_meter.val,
+                "memory_mb": memory_used,
+                "learning_rate": config.TRAIN.BASE_LR,
+            }
+            if lr_scheduler is not None:
+                stats["learning_rate"] = lr_scheduler.get_update_values(
+                    # Copied from line 326
+                    (epoch * num_steps + idx)
+                    // config.TRAIN.ACCUMULATION_STEPS
+                )[0]
+
+            tb_writer.log(stats, (epoch * num_steps + idx))
+
     epoch_time = time.time() - start
     logger.info(
-        f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}"
+        f"EPOCH {epoch} training took {datetime.timedelta(seconds=int(epoch_time))}"
     )
+    tb_writer.log({"train_time": epoch_time}, epoch)
 
 
 @torch.no_grad()
-def validate(config, data_loader, model):
-    criterion = torch.nn.CrossEntropyLoss()
+def validate(config, data_loader, model, epoch):
+    if config.HIERARHICAL:
+        criterion = FineGrainedCrossEntropyLoss()
+    else:
+        criterion = torch.nn.CrossEntropyLoss()
     model.eval()
 
     batch_time = AverageMeter()
@@ -387,6 +431,14 @@ def validate(config, data_loader, model):
                 f"Mem {memory_used:.0f}MB"
             )
     logger.info(f" * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}")
+    tb_writer.log(
+        {
+            "val_acc1": acc1_meter.avg,
+            "val_acc5": acc5_meter.avg,
+            "val_loss": loss_meter.avg,
+        },
+        epoch,
+    )
     return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
 
 
@@ -465,9 +517,10 @@ if __name__ == "__main__":
     logger = create_logger(
         output_dir=config.OUTPUT, dist_rank=dist.get_rank(), name=f"{config.MODEL.NAME}"
     )
+    tb_writer = TensorboardWriter(output_dir=config.OUTPUT, dist_rank=dist.get_rank())
 
     if dist.get_rank() == 0:
-        path = os.path.join(config.OUTPUT, "config.json")
+        path = os.path.join(config.OUTPUT, "config.yaml")
         with open(path, "w") as f:
             f.write(config.dump())
         logger.info(f"Full config saved to {path}")

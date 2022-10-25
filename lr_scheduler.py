@@ -26,7 +26,7 @@ def build_scheduler(config, optimizer, n_iter_per_epoch):
             t_initial=(num_steps - warmup_steps)
             if config.TRAIN.LR_SCHEDULER.WARMUP_PREFIX
             else num_steps,
-            t_mul=1.0,
+            cycle_mul=1.0,
             lr_min=config.TRAIN.MIN_LR,
             warmup_lr_init=config.TRAIN.WARMUP_LR,
             warmup_t=warmup_steps,
@@ -47,7 +47,7 @@ def build_scheduler(config, optimizer, n_iter_per_epoch):
         lr_scheduler = StepLRScheduler(
             optimizer,
             decay_t=decay_steps,
-            decay_rate=config.TRAIN.LR_SCHEDULER.DECAY_RATE,
+            cycle_decay=config.TRAIN.LR_SCHEDULER.DECAY_RATE,
             warmup_lr_init=config.TRAIN.WARMUP_LR,
             warmup_t=warmup_steps,
             t_in_epochs=False,
@@ -61,11 +61,35 @@ def build_scheduler(config, optimizer, n_iter_per_epoch):
             warmup_t=warmup_steps,
             t_in_epochs=False,
         )
+    elif config.TRAIN.LR_SCHEDULER.NAME == "constant":
+        lr_scheduler = ConstantLRScheduler(
+            optimizer,
+            warmup_lr_init=config.TRAIN.WARMUP_LR,
+            warmup_t=warmup_steps,
+            t_in_epochs=False,
+        )
 
     return lr_scheduler
 
 
-class LinearLRScheduler(Scheduler):
+class TimmScheduler(Scheduler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_epoch_values(self, epoch: int):
+        if self.t_in_epochs:
+            return self._get_lr(epoch)
+        else:
+            return None
+
+    def get_update_values(self, num_updates: int):
+        if not self.t_in_epochs:
+            return self._get_lr(num_updates)
+        else:
+            return None
+
+
+class LinearLRScheduler(TimmScheduler):
     def __init__(
         self,
         optimizer: torch.optim.Optimizer,
@@ -115,20 +139,8 @@ class LinearLRScheduler(Scheduler):
             ]
         return lrs
 
-    def get_epoch_values(self, epoch: int):
-        if self.t_in_epochs:
-            return self._get_lr(epoch)
-        else:
-            return None
 
-    def get_update_values(self, num_updates: int):
-        if not self.t_in_epochs:
-            return self._get_lr(num_updates)
-        else:
-            return None
-
-
-class MultiStepLRScheduler(Scheduler):
+class MultiStepLRScheduler(TimmScheduler):
     def __init__(
         self,
         optimizer: torch.optim.Optimizer,
@@ -165,14 +177,31 @@ class MultiStepLRScheduler(Scheduler):
             ]
         return lrs
 
-    def get_epoch_values(self, epoch: int):
-        if self.t_in_epochs:
-            return self._get_lr(epoch)
-        else:
-            return None
 
-    def get_update_values(self, num_updates: int):
-        if not self.t_in_epochs:
-            return self._get_lr(num_updates)
+class ConstantLRScheduler(TimmScheduler):
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer,
+        warmup_t=0,
+        warmup_lr_init=0,
+        t_in_epochs=True,
+    ) -> None:
+        super().__init__(optimizer, param_group_field="lr")
+
+        self.warmup_t = warmup_t
+        self.warmup_lr_init = warmup_lr_init
+        self.t_in_epochs = t_in_epochs
+        if self.warmup_t:
+            self.warmup_steps = [
+                (v - warmup_lr_init) / self.warmup_t for v in self.base_values
+            ]
+            super().update_groups(self.warmup_lr_init)
         else:
-            return None
+            self.warmup_steps = [1 for _ in self.base_values]
+
+    def _get_lr(self, t):
+        if t < self.warmup_t:
+            lrs = [self.warmup_lr_init + t * s for s in self.warmup_steps]
+        else:
+            lrs = [v for v in self.base_values]
+        return lrs

@@ -6,15 +6,19 @@
 # --------------------------------------------------------
 
 import os
+import random
 
 import numpy as np
 import torch
 import torch.distributed as dist
 from timm.data import Mixup, create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from torch.utils.data import Subset
 from torchvision import datasets, transforms
 
 from .cached_image_folder import CachedImageFolder
+from .constants import data_mean_std
+from .hierarchical import HierarchicalImageFolder, HierarchicalMixup
 from .imagenet22k_dataset import IN22KDATASET
 from .samplers import SubsetRandomSampler
 
@@ -35,7 +39,7 @@ try:
     import timm.data.transforms as timm_transforms
 
     timm_transforms._pil_interp = _pil_interp
-except:
+except ImportError:
     from timm.data.transforms import _pil_interp
 
 
@@ -52,6 +56,12 @@ def build_loader(config):
     print(
         f"local rank {config.LOCAL_RANK} / global rank {dist.get_rank()} successfully build val dataset"
     )
+
+    # Check if we are overfitting some subset of the training data for debugging
+    if config.TRAIN.OVERFIT_BATCHES > 0:
+        n_examples = config.TRAIN.OVERFIT_BATCHES * config.DATA.BATCH_SIZE
+        indices = random.sample(range(len(dataset_train)), n_examples)
+        dataset_train = Subset(dataset_train, indices)
 
     num_tasks = dist.get_world_size()
     global_rank = dist.get_rank()
@@ -97,7 +107,7 @@ def build_loader(config):
         or config.AUG.CUTMIX_MINMAX is not None
     )
     if mixup_active:
-        mixup_fn = Mixup(
+        mixup_args = dict(
             mixup_alpha=config.AUG.MIXUP,
             cutmix_alpha=config.AUG.CUTMIX,
             cutmix_minmax=config.AUG.CUTMIX_MINMAX,
@@ -107,6 +117,10 @@ def build_loader(config):
             label_smoothing=config.MODEL.LABEL_SMOOTHING,
             num_classes=config.MODEL.NUM_CLASSES,
         )
+        if config.HIERARHICAL:
+            mixup_fn = HierarchicalMixup(**mixup_args)
+        else:
+            mixup_fn = Mixup(**mixup_args)
 
     return dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn
 
@@ -137,6 +151,19 @@ def build_dataset(is_train, config):
             ann_file = prefix + "_map_val.txt"
         dataset = IN22KDATASET(config.DATA.DATA_PATH, ann_file, transform)
         nb_classes = 21841
+
+    elif config.DATA.DATASET == "inat21":
+        if config.DATA.ZIP_MODE:
+            raise NotImplementedError("We do not support zipped inat21")
+
+        prefix = "train" if is_train else "val"
+        root = os.path.join(config.DATA.DATA_PATH, prefix)
+        if config.HIERARHICAL:
+            dataset = HierarchicalImageFolder(root, transform=transform)
+            nb_classes = dataset.num_classes
+        else:
+            dataset = datasets.ImageFolder(root, transform=transform)
+            nb_classes = 10_000
     else:
         raise NotImplementedError("We only support ImageNet Now.")
 
@@ -188,6 +215,16 @@ def build_transform(is_train, config):
                 )
             )
 
+    if config.DATA.DATA_PATH in data_mean_std:
+        mean, std = data_mean_std[config.DATA.DATA_PATH]
+    elif config.DATA.DATASET in data_mean_std:
+        mean, std = data_mean_std[config.DATA.DATASET]
+    else:
+        print(
+            "Can't find mean/std for {config.DATA.DATASET} at {config.DATA.DATASET}. Using Imagenet mean/std."
+        )
+        mean, std = IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+
     t.append(transforms.ToTensor())
-    t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
+    t.append(transforms.Normalize(mean, std))
     return transforms.Compose(t)

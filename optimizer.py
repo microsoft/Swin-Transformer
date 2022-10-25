@@ -11,7 +11,7 @@ from torch import optim as optim
 
 try:
     from apex.optimizers import FusedAdam, FusedLAMB
-except:
+except ImportError:
     FusedAdam = None
     FusedLAMB = None
     print("To use FusedLAMB or FusedAdam, please install apex.")

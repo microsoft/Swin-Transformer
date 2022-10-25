@@ -203,7 +203,7 @@ def get_grad_norm(parameters, norm_type=2):
 def auto_resume_helper(output_dir):
     checkpoints = os.listdir(output_dir)
     checkpoints = [ckpt for ckpt in checkpoints if ckpt.endswith("pth")]
-    print(f"All checkpoints founded in {output_dir}: {checkpoints}")
+    print(f"All checkpoints found in {output_dir}: {checkpoints}")
     if len(checkpoints) > 0:
         latest_checkpoint = max(
             [os.path.join(output_dir, d) for d in checkpoints], key=os.path.getmtime
@@ -240,6 +240,15 @@ def ampscaler_get_grad_norm(parameters, norm_type: float = 2.0) -> torch.Tensor:
             norm_type,
         )
     return total_norm
+
+
+def batch_size(tensor_or_list):
+    if isinstance(tensor_or_list, torch.Tensor):
+        return tensor_or_list.size(0)
+    elif isinstance(tensor_or_list, list):
+        sizes = [tensor.size(0) for tensor in tensor_or_list]
+        assert all(size == sizes[0] for size in sizes)
+        return sizes[0]
 
 
 class NativeScalerWithGradNormCount:

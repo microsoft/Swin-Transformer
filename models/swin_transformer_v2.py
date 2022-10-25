@@ -13,6 +13,24 @@ import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 
+class HierarchicalHead(nn.Module):
+    def __init__(self, num_features, num_classes):
+        super().__init__()
+        self.num_classes = tuple(num_classes)
+        for num_class in self.num_classes:
+            assert num_class > 0
+
+        self.heads = nn.ModuleList(
+            [nn.Linear(num_features, num_class) for num_class in self.num_classes]
+        )
+
+    def forward(self, x):
+        # we do not want to use self.heads(x) because that would feed them through
+        # each element in the list sequentially, whereas we want x through each head
+        # individually.
+        return [head(x) for head in self.heads]
+
+
 class Mlp(nn.Module):
     def __init__(
         self,
@@ -109,6 +127,7 @@ class WindowAttention(nn.Module):
         self.logit_scale = nn.Parameter(
             torch.log(10 * torch.ones((num_heads, 1, 1))), requires_grad=True
         )
+        self.register_buffer("logit_clamp_max", torch.log(torch.tensor(1.0 / 0.01)))
 
         # mlp to generate continuous relative position bias
         self.cpb_mlp = nn.Sequential(
@@ -200,9 +219,7 @@ class WindowAttention(nn.Module):
 
         # cosine attention
         attn = F.normalize(q, dim=-1) @ F.normalize(k, dim=-1).transpose(-2, -1)
-        logit_scale = torch.clamp(
-            self.logit_scale, max=torch.log(torch.tensor(1.0 / 0.01))
-        ).exp()
+        logit_scale = torch.clamp(self.logit_scale, max=self.logit_clamp_max).exp()
         attn = attn * logit_scale
 
         relative_position_bias_table = self.cpb_mlp(self.relative_coords_table).view(
@@ -756,11 +773,19 @@ class SwinTransformerV2(nn.Module):
 
         self.norm = norm_layer(self.num_features)
         self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.head = (
-            nn.Linear(self.num_features, num_classes)
-            if num_classes > 0
-            else nn.Identity()
-        )
+
+        # Checks if we are doing hierarchical classification or not.
+        if isinstance(num_classes, int):
+            self.head = (
+                nn.Linear(self.num_features, num_classes)
+                if num_classes > 0
+                else nn.Identity()
+            )
+            self.hierarchical = False
+        else:
+            self.num_classes = tuple(num_classes)
+            self.head = HierarchicalHead(self.num_features, num_classes)
+            self.hierarchical = True
 
         self.apply(self._init_weights)
         for bly in self.layers:
@@ -805,7 +830,7 @@ class SwinTransformerV2(nn.Module):
     def flops(self):
         flops = 0
         flops += self.patch_embed.flops()
-        for i, layer in enumerate(self.layers):
+        for layer in self.layers:
             flops += layer.flops()
         flops += (
             self.num_features
@@ -813,5 +838,13 @@ class SwinTransformerV2(nn.Module):
             * self.patches_resolution[1]
             // (2**self.num_layers)
         )
-        flops += self.num_features * self.num_classes
+        if isinstance(self.num_classes, int):
+            flops += self.num_features * self.num_classes
+        elif isinstance(self.num_classes, tuple):
+            for num_class in self.num_classes:
+                flops += self.num_features * num_class
+        else:
+            raise RuntimeError(
+                f"Internal error: self.num_classes should be int or tuple, not {type(self.num_classes)}"
+            )
         return flops

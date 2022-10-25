@@ -21,7 +21,7 @@ def build_model(config, is_pretrain=False):
             import apex as amp
 
             layernorm = amp.normalization.FusedLayerNorm
-        except:
+        except ImportError:
             layernorm = None
             print("To use FusedLayerNorm, please install apex.")
     else:

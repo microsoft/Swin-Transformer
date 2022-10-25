@@ -194,6 +194,13 @@ _C.TRAIN.LAYER_DECAY = 1.0
 _C.TRAIN.MOE = CN()
 # Only save model on master device
 _C.TRAIN.MOE.SAVE_MASTER = False
+
+# Hierarchical coefficients for loss
+_C.TRAIN.HIERARCHICAL_COEFFS = (1,)
+
+# [Debugging] How many batches of the training data to overfit.
+_C.TRAIN.OVERFIT_BATCHES = 0
+
 # -----------------------------------------------------------------------------
 # Augmentation settings
 # -----------------------------------------------------------------------------
@@ -234,6 +241,10 @@ _C.TEST.SHUFFLE = False
 # -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
+
+# Whether we are doing hierarchical classification
+_C.HIERARHICAL = False
+
 # [SimMIM] Whether to enable pytorch amp, overwritten by command line argument
 _C.ENABLE_AMP = False
 
@@ -330,12 +341,14 @@ def update_config(config, args):
         config.FUSED_WINDOW_PROCESS = True
     if _check_args("fused_layernorm"):
         config.FUSED_LAYERNORM = True
-    ## Overwrite optimizer if not None, currently we use it for [fused_adam, fused_lamb]
+    # Overwrite optimizer if not None, currently we use it for [fused_adam, fused_lamb]
     if _check_args("optim"):
         config.TRAIN.OPTIMIZER.NAME = args.optim
 
-    # set local rank for distributed training
-    config.LOCAL_RANK = args.local_rank
+    # Use os.environ["LOCAL_RANK"] rather than --local_rank
+    if "LOCAL_RANK" in os.environ:
+        # set local rank for distributed training
+        config.LOCAL_RANK = int(os.environ["LOCAL_RANK"])
 
     # output folder
     config.OUTPUT = os.path.join(config.OUTPUT, config.MODEL.NAME, config.TAG)
