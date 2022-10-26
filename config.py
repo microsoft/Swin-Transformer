@@ -243,7 +243,7 @@ _C.TEST.SHUFFLE = False
 # -----------------------------------------------------------------------------
 
 # Whether we are doing hierarchical classification
-_C.HIERARHICAL = False
+_C.HIERARCHICAL = False
 
 # [SimMIM] Whether to enable pytorch amp, overwritten by command line argument
 _C.ENABLE_AMP = False

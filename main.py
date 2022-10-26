@@ -176,14 +176,14 @@ def main(config):
         lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
 
     if config.AUG.MIXUP == 0 and config.MODEL.LABEL_SMOOTHING > 0.0:
-        if config.HIERARHICAL:
+        if config.HIERARCHICAL:
             raise NotImplementedError(
                 "We don't support hierarhical loss with label smoothing and no mixup."
             )
         criterion = LabelSmoothingCrossEntropy(smoothing=config.MODEL.LABEL_SMOOTHING)
     else:
         # If we have mixup, smoothing is handled with mixup label transform
-        if config.HIERARHICAL:
+        if config.HIERARCHICAL:
             criterion = HierarchicalCrossEntropyLoss(
                 coeffs=config.TRAIN.HIERARCHICAL_COEFFS
             ).to(torch.cuda.current_device())
@@ -386,7 +386,7 @@ def train_one_epoch(
 
 @torch.no_grad()
 def validate(config, data_loader, model, epoch):
-    if config.HIERARHICAL:
+    if config.HIERARCHICAL:
         criterion = FineGrainedCrossEntropyLoss()
     else:
         criterion = torch.nn.CrossEntropyLoss()

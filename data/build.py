@@ -117,7 +117,7 @@ def build_loader(config):
             label_smoothing=config.MODEL.LABEL_SMOOTHING,
             num_classes=config.MODEL.NUM_CLASSES,
         )
-        if config.HIERARHICAL:
+        if config.HIERARCHICAL:
             mixup_fn = HierarchicalMixup(**mixup_args)
         else:
             mixup_fn = Mixup(**mixup_args)
@@ -158,7 +158,7 @@ def build_dataset(is_train, config):
 
         prefix = "train" if is_train else "val"
         root = os.path.join(config.DATA.DATA_PATH, prefix)
-        if config.HIERARHICAL:
+        if config.HIERARCHICAL:
             dataset = HierarchicalImageFolder(root, transform=transform)
             nb_classes = dataset.num_classes
         else:
