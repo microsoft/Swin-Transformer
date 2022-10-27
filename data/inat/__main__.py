@@ -9,7 +9,7 @@ def preprocess_cli(args):
 
 
 def normalize_cli(args):
-    std, mean = datasets.load_statistics(args.directory, use_cache=False)
+    std, mean = datasets.load_statistics(args.directory)
     print("Add this to a constants.py file:")
     print(
         f"""

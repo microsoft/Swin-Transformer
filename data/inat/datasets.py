@@ -15,8 +15,6 @@ def load_statistics(directory):
     """
     Need to calculate mean and std for the individual channels so we can normalize the images.
     """
-
-    # 1. Load the images into a dataset, then a dataloader so we can iterate over them quickly.
     dataset = timm.data.ImageDataset(
         root=directory, transform=torchvision.transforms.ToTensor()
     )
@@ -25,7 +23,7 @@ def load_statistics(directory):
     total = torch.zeros((channels,))
     total_squared = torch.zeros((channels,))
 
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=64, num_workers=32)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=256, num_workers=32)
 
     for batch, _ in tqdm(dataloader):
         total += einops.reduce(batch, "batch channel height width -> channel", "sum")

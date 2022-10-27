@@ -220,10 +220,9 @@ def build_transform(is_train, config):
     elif config.DATA.DATASET in data_mean_std:
         mean, std = data_mean_std[config.DATA.DATASET]
     else:
-        print(
-            "Can't find mean/std for {config.DATA.DATASET} at {config.DATA.DATASET}. Using Imagenet mean/std."
+        raise RuntimeError(
+            f"Can't find mean/std for {config.DATA.DATASET} at {config.DATA.DATASET}. Please add it to data/constants.py (try using python -m data.inat normalize for iNat)."
         )
-        mean, std = IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
     t.append(transforms.ToTensor())
     t.append(transforms.Normalize(mean, std))
