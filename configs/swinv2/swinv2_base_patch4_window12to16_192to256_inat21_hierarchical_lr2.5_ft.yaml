@@ -1,0 +1,34 @@
+DATA:
+  DATASET: inat21
+  NUM_WORKERS: 32
+  BATCH_SIZE: 16
+  IMG_SIZE: 256
+  DATA_PATH: /mnt/10tb/data/inat21/resize-256
+MODEL:
+  TYPE: swinv2
+  NAME: swinv2_base_patch4_window12to16_192to256_inat21_hierarchical_lr2.5_ft
+  PRETRAINED: /mnt/10tb/models/swinv2_base_patch4_window12_192_inat21_hierarchical_lr2.5_v0_epoch_89.pth
+  DROP_PATH_RATE: 0.2
+  SWINV2:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 16
+    PRETRAINED_WINDOW_SIZES: [ 12, 12, 12, 6 ]
+TRAIN:
+  # Global batch size of 1024
+  ACCUMULATION_STEPS: 8
+  EPOCHS: 30
+  WARMUP_EPOCHS: 5
+
+  # Should weight decay be this low?
+  # I don't think so, but I am sticking with the default for now.
+  WEIGHT_DECAY: 1.0e-8
+
+  BASE_LR: 2.0e-05
+  WARMUP_LR: 2.0e-08
+  MIN_LR: 2.0e-07
+
+  HIERARCHICAL_COEFFS: [ 8, 5.65, 4, 2.82, 2, 1.41, 1 ]
+
+HIERARCHICAL: true
