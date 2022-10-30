@@ -1,4 +1,5 @@
 import torch
+from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
 data_mean_std = {
     "/mnt/10tb/data/inat21/resize-192": (
@@ -13,4 +14,5 @@ data_mean_std = {
         torch.tensor([0.23768986761569977, 0.22925858199596405, 0.2476460039615631]),
         torch.tensor([0.4632672071456909, 0.480050653219223, 0.37618669867515564]),
     ),
+    "imagenet": (IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
 }

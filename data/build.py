@@ -12,7 +12,6 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from timm.data import Mixup, create_transform
-from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from torch.utils.data import Subset
 from torchvision import datasets, transforms
 
