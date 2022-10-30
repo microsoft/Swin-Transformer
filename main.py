@@ -360,8 +360,8 @@ def train_one_epoch(
             )
             stats = {
                 "train/batch_time": batch_time.val,
-                "train/loss": loss_meter.val,
                 "train/grad_norm": norm_meter.val,
+                "train/loss": loss_meter.val,
                 "train/loss_scale": scaler_meter.val,
                 "memory_mb": memory_used,
                 "train/learning_rate": config.TRAIN.BASE_LR,

@@ -93,10 +93,27 @@ class WandbWriter:
         wandb.init(
             config=config, project="hierarchical-vision", dir="./runs", resume=True
         )
+        # Validation metrics
+        wandb.define_metric(
+            "val/loss", step_metric="epoch", summary="best", objective="max"
+        )
+        wandb.define_metric(
+            "val/acc1", step_metric="epoch", summary="best", objective="max"
+        )
+        wandb.define_metric(
+            "val/acc5", step_metric="epoch", summary="best", objective="max"
+        )
 
-        wandb.define_metric("val/loss", step_metric="epoch", summary="min")
-        wandb.define_metric("val/acc1", step_metric="epoch", summary="max")
-        wandb.define_metric("val/acc5", step_metric="epoch", summary="max")
+        # Training metrics
+        wandb.define_metric("train/batch_time", step_metric="step", summary="last")
+        wandb.define_metric("train/grad_norm", step_metric="step", summary="last")
+        wandb.define_metric("train/loss", step_metric="step", summary="last")
+        wandb.define_metric("train/loss_scale", step_metric="step", summary="last")
+        wandb.define_metric("train/learning_rate", step_metric="step", summary="last")
+        wandb.define_metric("train/epoch_time", step_metric="epoch", summary="last")
+
+        # Other metrics
+        wandb.define_metric("memory_mb", summary="max")
 
     def log(self, dct):
         if self.rank != 0:
