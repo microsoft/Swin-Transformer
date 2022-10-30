@@ -383,7 +383,6 @@ def train_one_epoch(
     )
     wandb_writer.log(
         {"train/epoch_time": epoch_time, "train/loss": loss_meter.avg, "epoch": epoch},
-        epoch,
     )
 
 
