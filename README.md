@@ -27,7 +27,7 @@ pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1+cu1
 Python packages
 
 ```sh
-pip install matplotlib yacs timm einops black isort flake8 flake8-bugbear termcolor tensorboard preface opencv-python
+pip install matplotlib yacs timm einops black isort flake8 flake8-bugbear termcolor wandb preface opencv-python
 ```
 
 2. Install Apex
@@ -70,4 +70,26 @@ Use your root data folder and your size of choice.
 ```
 python -m data.inat preprocess /mnt/10tb/data/inat21/ val resize 224
 python -m data.inat preprocess /mnt/10tb/data/inat21/ train resize 224
+```
+
+5. Login to Wandb
+
+```
+wandb login
+```
+
+## AWS Helpers
+
+Uninstall v1 of awscli:
+
+```
+sudo /usr/local/bin/pip uninstall awscli
+```
+
+Install v2:
+```
+cd ~/pkg
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install --bin-dir ~/.local/bin --install-dir ~/.local/aws-cli
 ```
