@@ -26,7 +26,7 @@ from hierarchical import (
     HierarchicalCrossEntropyLoss,
     accuracy,
 )
-from logger import TensorboardWriter, create_logger
+from logger import WandbWriter, create_logger
 from lr_scheduler import build_scheduler
 from models import build_model
 from optimizer import build_optimizer
@@ -38,7 +38,6 @@ from utils import (
     load_pretrained,
     reduce_tensor,
     save_checkpoint,
-    to_hparams,
 )
 
 
@@ -374,14 +373,15 @@ def train_one_epoch(
                     // config.TRAIN.ACCUMULATION_STEPS
                 )[0]
 
-            tb_writer.log(stats, (epoch * num_steps + idx))
+            wandb_writer.log(
+                {**stats, "step": epoch * num_steps + idx, "epoch": epoch, "batch": idx}
+            )
 
     epoch_time = time.time() - start
     logger.info(
         f"EPOCH {epoch} training took {datetime.timedelta(seconds=int(epoch_time))}"
     )
-    tb_writer.log({"train_time": epoch_time}, epoch)
-    tb_writer.add_hparams(to_hparams(config), stats)
+    wandb_writer.log({"train_time": epoch_time, "epoch": epoch}, epoch)
 
 
 @torch.no_grad()
@@ -433,14 +433,15 @@ def validate(config, data_loader, model, epoch):
                 f"Mem {memory_used:.0f}MB"
             )
     logger.info(f" * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}")
-    tb_writer.log(
+    wandb_writer.log(
         {
             "val_acc1": acc1_meter.avg,
             "val_acc5": acc5_meter.avg,
             "val_loss": loss_meter.avg,
+            "epoch": epoch,
         },
-        epoch,
     )
+
     return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
 
 
@@ -519,7 +520,8 @@ if __name__ == "__main__":
     logger = create_logger(
         output_dir=config.OUTPUT, dist_rank=dist.get_rank(), name=f"{config.MODEL.NAME}"
     )
-    tb_writer = TensorboardWriter(output_dir=config.OUTPUT, dist_rank=dist.get_rank())
+    wandb_writer = WandbWriter(rank=dist.get_rank())
+    wandb_writer.init(config)
 
     if dist.get_rank() == 0:
         path = os.path.join(config.OUTPUT, "config.yaml")

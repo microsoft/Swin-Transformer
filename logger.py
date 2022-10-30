@@ -11,9 +11,9 @@ import os
 import sys
 
 import torch
+import wandb
 from termcolor import colored
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.tensorboard.summary import hparams
 
 
 @functools.lru_cache()
@@ -82,15 +82,31 @@ class TensorboardWriter:
                 print(f"Can't log {v} because it is {type(v)}!")
 
 
-class CorrectedSummaryWriter(SummaryWriter):
-    def add_hparams(self, hparam_dict, metric_dict):
-        torch._C._log_api_usage_once("tensorboard.logging.add_hparams")
-        if type(hparam_dict) is not dict or type(metric_dict) is not dict:
-            raise TypeError("hparam_dict and metric_dict should be dictionary.")
-        exp, ssi, sei = hparams(hparam_dict, metric_dict)
+class WandbWriter:
+    def __init__(self, rank):
+        self.rank = rank
 
-        self.file_writer.add_summary(exp)
-        self.file_writer.add_summary(ssi)
-        self.file_writer.add_summary(sei)
-        for k, v in metric_dict.items():
-            self.add_scalar(k, v)
+    def init(self, config):
+        if self.rank != 0:
+            return
+
+        wandb.init(
+            config=config, project="hierarchical-vision", dir="./runs", resume=True
+        )
+
+        wandb.define_metric("val/loss", step_metric="epoch", summary="min")
+        wandb.define_metric("val/acc1", step_metric="epoch", summary="max")
+        wandb.define_metric("val/acc5", step_metric="epoch", summary="max")
+
+    def log(self, dct):
+        if self.rank != 0:
+            return
+
+        wandb.log(dct)
+
+    @property
+    def name(self):
+        if self.rank != 0:
+            raise RuntimeError(f"Should not get .name with rank {self.rank}.")
+
+        return wandb.run.name
