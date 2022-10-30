@@ -120,7 +120,7 @@ def parse_option():
     parser.add_argument(
         "--fused_layernorm", action="store_true", help="Use fused layernorm."
     )
-    ## overwrite optimizer in config (*.yaml) if specified, e.g., fused_adam/fused_lamb
+    # overwrite optimizer in config (*.yaml) if specified, e.g., fused_adam/fused_lamb
     parser.add_argument(
         "--optim",
         type=str,
@@ -452,12 +452,12 @@ def throughput(data_loader, model, logger):
     for idx, (images, _) in enumerate(data_loader):
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
-        for i in range(50):
+        for _ in range(50):
             model(images)
         torch.cuda.synchronize()
-        logger.info(f"throughput averaged with 30 times")
+        logger.info("throughput averaged with 30 times")
         tic1 = time.time()
-        for i in range(30):
+        for _ in range(30):
             model(images)
         torch.cuda.synchronize()
         tic2 = time.time()
