@@ -359,15 +359,15 @@ def train_one_epoch(
                 f"mem {memory_used:.0f}MB"
             )
             stats = {
-                "train_batch_time": batch_time.val,
-                "train_loss": loss_meter.val,
-                "train_grad_norm": norm_meter.val,
-                "train_loss_scale": scaler_meter.val,
+                "train/batch_time": batch_time.val,
+                "train/loss": loss_meter.val,
+                "train/grad_norm": norm_meter.val,
+                "train/loss_scale": scaler_meter.val,
                 "memory_mb": memory_used,
-                "learning_rate": config.TRAIN.BASE_LR,
+                "train/learning_rate": config.TRAIN.BASE_LR,
             }
             if lr_scheduler is not None:
-                stats["learning_rate"] = lr_scheduler.get_update_values(
+                stats["train/learning_rate"] = lr_scheduler.get_update_values(
                     # Copied from line 326
                     (epoch * num_steps + idx)
                     // config.TRAIN.ACCUMULATION_STEPS
@@ -381,7 +381,7 @@ def train_one_epoch(
     logger.info(
         f"EPOCH {epoch} training took {datetime.timedelta(seconds=int(epoch_time))}"
     )
-    wandb_writer.log({"train_time": epoch_time, "epoch": epoch}, epoch)
+    wandb_writer.log({"train/epoch_time": epoch_time, "epoch": epoch}, epoch)
 
 
 @torch.no_grad()
@@ -435,9 +435,9 @@ def validate(config, data_loader, model, epoch):
     logger.info(f" * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}")
     wandb_writer.log(
         {
-            "val_acc1": acc1_meter.avg,
-            "val_acc5": acc5_meter.avg,
-            "val_loss": loss_meter.avg,
+            "val/acc1": acc1_meter.avg,
+            "val/acc5": acc5_meter.avg,
+            "val/loss": loss_meter.avg,
             "epoch": epoch,
         },
     )
