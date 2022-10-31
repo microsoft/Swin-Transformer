@@ -95,6 +95,7 @@ class WandbWriter:
             project="hierarchical-vision",
             dir="./runs",
             resume=bool(config.MODEL.RESUME),
+            name=config.MODEL.NAME,
         )
         # Validation metrics
         wandb.define_metric(

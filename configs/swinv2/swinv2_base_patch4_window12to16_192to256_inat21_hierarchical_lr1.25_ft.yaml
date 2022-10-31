@@ -6,8 +6,8 @@ DATA:
   DATA_PATH: /mnt/10tb/data/inat21/resize-256
 MODEL:
   TYPE: swinv2
-  NAME: swinv2_base_patch4_window12to16_192to256_inat21_hierarchical_lr1.25_ft
   PRETRAINED: /mnt/10tb/models/swinv2_base_patch4_window12_192_inat21_hierarchical_lr1.25_v0_epoch_89.pth
+  NAME: groovy-grape-256
   DROP_PATH_RATE: 0.2
   SWINV2:
     EMBED_DIM: 128
