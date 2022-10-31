@@ -9,13 +9,13 @@ def preprocess_cli(args):
 
 
 def normalize_cli(args):
-    std, mean = datasets.load_statistics(args.directory)
+    mean, std = datasets.load_statistics(args.directory)
     print("Add this to a constants.py file:")
     print(
         f"""
 "{args.directory}": (
-    torch.tensor({std.tolist()}),
     torch.tensor({mean.tolist()}),
+    torch.tensor({std.tolist()}),
 ),"""
     )
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # Normalize
     normalize_parser = subparsers.add_parser(
-        "normalize", help="Measure std. dev. and mean of dataset."
+        "normalize", help="Measure mean and std of dataset."
     )
     normalize_parser.add_argument("directory", help="Data folder")
     normalize_parser.set_defaults(func=normalize_cli)

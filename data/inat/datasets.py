@@ -37,7 +37,7 @@ def load_statistics(directory):
     var = total_squared / divisor - torch.mul(mean, mean)
     std = torch.sqrt(var)
 
-    return std, mean
+    return mean, std
 
 
 class Inat21:
