@@ -16,4 +16,4 @@ I initialized training on strawberry0 on 4x A6000 servers.
 
 I decided to use the A6000 servers for 256x256 tuning, so I am moving the latest checkpoint to S3, then cloning it back to an 8x V100 server to finish training.
 I am storing the 40th checkpoint on S3 as funky-banana-192-epoch40.pth.
-
+It is now running as funky-banana-192 on 8x V100.
