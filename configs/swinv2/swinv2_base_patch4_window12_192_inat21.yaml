@@ -6,7 +6,7 @@ DATA:
   BATCH_SIZE: 256
 MODEL:
   TYPE: swinv2
-  NAME: swinv2_base_patch4_window12_192_inat21
+  NAME: funky-banana-192
   DROP_PATH_RATE: 0.2
   SWINV2:
     EMBED_DIM: 128
