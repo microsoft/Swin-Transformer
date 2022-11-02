@@ -1,12 +1,10 @@
 DATA:
   DATASET: inat21
   IMG_SIZE: 192
-  DATA_PATH: /research/nfs_su_809/cv_datasets/inat21/train_val_192
   NUM_WORKERS: 32
-  BATCH_SIZE: 256
 MODEL:
   TYPE: swinv2
-  NAME: funky-banana-192
+  NAME: swinv2_base
   DROP_PATH_RATE: 0.2
   SWINV2:
     EMBED_DIM: 128
@@ -16,7 +14,7 @@ MODEL:
 TRAIN:
   # Want a global batch size of 2048 because SwinV2 was trained on 16 V100s with batch size 128 (I think)
   # But we are going to use a global batch size of 1024 because it's faster (throughput).
-  ACCUMULATION_STEPS: 1
+  GLOBAL_BATCH_SIZE: 1024
 
   # We are using limited epochs based on pre-training configs for imagenet22k
   # Then we will pre-train on 256x256 for 30 epochs
@@ -25,3 +23,7 @@ TRAIN:
   WEIGHT_DECAY: 0.1
 
 SAVE_FREQ: 4
+
+EXPERIMENT:
+  NAME: funky-banana-192
+  WANDB_ID: 2y91axvs

@@ -378,7 +378,7 @@ def ampscaler_get_grad_norm(parameters, norm_type: float = 2.0) -> torch.Tensor:
     return total_norm
 
 
-def batch_size(tensor_or_list):
+def batch_size_of(tensor_or_list):
     if isinstance(tensor_or_list, torch.Tensor):
         return tensor_or_list.size(0)
     elif isinstance(tensor_or_list, list):

@@ -5,7 +5,7 @@ We train for 90 epochs at 192x192, then tune for 30 epochs at 256x256.
 
 ```yaml
 configs: 
-- configs/swinv2/swinv2_base_patch4_window12_192_inat21.yaml
+- configs/hierarchical-vision-project/funky-banana-192.yaml
 - configs/swinv2/swinv2_base_patch4_window12to16_192to256_inat21.yaml
 codename: funky-banana
 ```

@@ -19,8 +19,6 @@ _C.BASE = [""]
 # Data settings
 # -----------------------------------------------------------------------------
 _C.DATA = CN()
-# Batch size for a single GPU, could be overwritten by command line argument
-_C.DATA.BATCH_SIZE = 128
 # Path to dataset, could be overwritten by command line argument
 _C.DATA.DATA_PATH = ""
 # Dataset name
@@ -146,6 +144,10 @@ _C.MODEL.SIMMIM.NORM_TARGET.PATCH_SIZE = 47
 # Training settings
 # -----------------------------------------------------------------------------
 _C.TRAIN = CN()
+# Batch size for a single GPU, could be overwritten by command line argument
+_C.TRAIN.DEVICE_BATCH_SIZE = 128
+# Global batch size = DEVICE_BATCH_SIZE * N_PROCS * ACCUMULATION_STEPS
+_C.TRAIN.GLOBAL_BATCH_SIZE = 1024
 _C.TRAIN.START_EPOCH = 0
 _C.TRAIN.EPOCHS = 300
 _C.TRAIN.WARMUP_EPOCHS = 20
@@ -239,6 +241,16 @@ _C.TEST.SEQUENTIAL = False
 _C.TEST.SHUFFLE = False
 
 # -----------------------------------------------------------------------------
+# Experiment Settings
+# -----------------------------------------------------------------------------
+_C.EXPERIMENT = CN()
+# The experiment name. This is a human-readable name that is easy to read.
+_C.EXPERIMENT.NAME = "default-dragonfruit"
+# The wandb id for logging.
+# Generate this id with scripts/generate_wandb_id
+_C.EXPERIMENT.WANDB_ID = ""
+
+# -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
 
@@ -254,8 +266,6 @@ _C.AMP_ENABLE = True
 _C.AMP_OPT_LEVEL = ""
 # Path to output folder, overwritten by command line argument
 _C.OUTPUT = ""
-# Tag of experiment, overwritten by command line argument
-_C.TAG = "default"
 # Frequency to save checkpoint
 _C.SAVE_FREQ = 1
 # Frequency to logging info
@@ -302,9 +312,9 @@ def update_config(config, args):
 
     # merge from specific arguments
     if _check_args("batch_size"):
-        config.DATA.BATCH_SIZE = args.batch_size
+        config.TRAIN.DEVICE_BATCH_SIZE = args.batch_size
     if _check_args("data_path"):
-        config.DATA.DATA_PATH = args.data_path
+        config.DATA.DATA_PATH = os.path.abspath(args.data_path)
     if _check_args("zip"):
         config.DATA.ZIP_MODE = True
     if _check_args("cache_mode"):
@@ -313,8 +323,6 @@ def update_config(config, args):
         config.MODEL.PRETRAINED = args.pretrained
     if _check_args("resume"):
         config.MODEL.RESUME = args.resume
-    if _check_args("accumulation_steps"):
-        config.TRAIN.ACCUMULATION_STEPS = args.accumulation_steps
     if _check_args("use_checkpoint"):
         config.TRAIN.USE_CHECKPOINT = True
     if _check_args("amp_opt_level"):
@@ -325,8 +333,6 @@ def update_config(config, args):
         config.AMP_ENABLE = False
     if _check_args("output"):
         config.OUTPUT = args.output
-    if _check_args("tag"):
-        config.TAG = args.tag
     if _check_args("eval"):
         config.EVAL_MODE = True
     if _check_args("throughput"):
@@ -350,8 +356,38 @@ def update_config(config, args):
         # set local rank for distributed training
         config.LOCAL_RANK = int(os.environ["LOCAL_RANK"])
 
+    # Use this to calculate accumulation steps
+    if "LOCAL_WORLD_SIZE" in os.environ:
+
+        def divide_cleanly(a, b):
+            assert a % b == 0, f"{a} / {b} has remainder {a % b}"
+            return a // b
+
+        n_procs = int(os.environ["LOCAL_WORLD_SIZE"])
+        desired_device_batch_size = divide_cleanly(
+            config.TRAIN.GLOBAL_BATCH_SIZE, n_procs
+        )
+        actual_device_batch_size = config.TRAIN.DEVICE_BATCH_SIZE
+
+        if actual_device_batch_size > desired_device_batch_size:
+            print(
+                f"Decreasing device batch size from {actual_device_batch_size} to {desired_device_batch_size} so your global bath size is {config.TRAIN.GLOBAL_BATCH_SIZE}, not {desired_device_batch_size * n_procs}!"
+            )
+            config.TRAIN.ACCUMULATION_STEPS = 1
+            config.TRAIN.DEVICE_BATCH_SIZE = desired_device_batch_size
+        elif desired_device_batch_size == actual_device_batch_size:
+            config.TRAIN.ACCUMULATION_STEPS = 1
+        else:
+            assert desired_device_batch_size > actual_device_batch_size
+            config.TRAIN.ACCUMULATION_STEPS = divide_cleanly(
+                desired_device_batch_size, actual_device_batch_size
+            )
+            print(
+                f"Using {config.TRAIN.ACCUMULATION_STEPS} accumulation steps so your global batch size is {config.TRAIN.GLOBAL_BATCH_SIZE}, not {actual_device_batch_size * n_procs}!"
+            )
+
     # output folder
-    config.OUTPUT = os.path.join(config.OUTPUT, config.MODEL.NAME, config.TAG)
+    config.OUTPUT = os.path.join(config.OUTPUT, config.EXPERIMENT.NAME)
 
     config.freeze()
 

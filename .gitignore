@@ -134,4 +134,9 @@ dmypy.json
 # Apex
 apex/
 
+# Logging
 runs/
+wandb/
+
+# host-specific values
+scripts/env.fish

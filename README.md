@@ -48,6 +48,7 @@ python setup.py install
 We use the iNat21 dataseta available on [GitHub](https://github.com/visipedia/inat_comp/tree/master/2021)
 
 ```
+cd /mnt/10tb
 mkdir -p data/inat21
 cd data/inat21
 mkdir compressed raw
@@ -68,8 +69,11 @@ mv train ../raw/
 Use your root data folder and your size of choice.
 
 ```
-python -m data.inat preprocess /mnt/10tb/data/inat21/ val resize 224
-python -m data.inat preprocess /mnt/10tb/data/inat21/ train resize 224
+export DATA_DIR=/mnt/10tb/data/inat21/
+python -m data.inat preprocess $DATA_DIR val resize 192
+python -m data.inat preprocess $DATA_DIR train resize 192
+python -m data.inat preprocess $DATA_DIR val resize 256
+python -m data.inat preprocess $DATA_DIR train resize 256
 ```
 
 5. Login to Wandb

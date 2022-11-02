@@ -11,9 +11,10 @@ import os
 import sys
 
 import torch
-import wandb
 from termcolor import colored
 from torch.utils.tensorboard import SummaryWriter
+
+import wandb
 
 
 @functools.lru_cache()
@@ -90,23 +91,24 @@ class WandbWriter:
         if self.rank != 0:
             return
 
-        wandb.init(
+        kwargs = dict(
             config=config,
             project="hierarchical-vision",
-            dir="./runs",
-            resume=bool(config.MODEL.RESUME),
-            name=config.MODEL.NAME,
+            name=config.EXPERIMENT.NAME,
         )
+
+        if not config.EXPERIMENT.WANDB_ID:
+            print("Cannot resume wandb run because no id was provided!")
+        else:
+            kwargs["id"] = config.EXPERIMENT.WANDB_ID
+            kwargs["resume"] = "allow"
+
+        wandb.init(**kwargs)
+
         # Validation metrics
-        wandb.define_metric(
-            "val/loss", step_metric="epoch", summary="best", objective="max"
-        )
-        wandb.define_metric(
-            "val/acc1", step_metric="epoch", summary="best", objective="max"
-        )
-        wandb.define_metric(
-            "val/acc5", step_metric="epoch", summary="best", objective="max"
-        )
+        wandb.define_metric("val/loss", step_metric="epoch", summary="max")
+        wandb.define_metric("val/acc1", step_metric="epoch", summary="max")
+        wandb.define_metric("val/acc5", step_metric="epoch", summary="max")
 
         # Training metrics
         wandb.define_metric("train/batch_time", step_metric="step", summary="last")

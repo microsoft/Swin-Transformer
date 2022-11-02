@@ -58,7 +58,7 @@ def build_loader(config):
 
     # Check if we are overfitting some subset of the training data for debugging
     if config.TRAIN.OVERFIT_BATCHES > 0:
-        n_examples = config.TRAIN.OVERFIT_BATCHES * config.DATA.BATCH_SIZE
+        n_examples = config.TRAIN.OVERFIT_BATCHES * config.TRAIN.DEVICE_BATCH_SIZE
         indices = random.sample(range(len(dataset_train)), n_examples)
         dataset_train = Subset(dataset_train, indices)
 
@@ -82,7 +82,7 @@ def build_loader(config):
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train,
         sampler=sampler_train,
-        batch_size=config.DATA.BATCH_SIZE,
+        batch_size=config.TRAIN.DEVICE_BATCH_SIZE,
         num_workers=config.DATA.NUM_WORKERS,
         pin_memory=config.DATA.PIN_MEMORY,
         drop_last=True,
@@ -91,7 +91,7 @@ def build_loader(config):
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val,
         sampler=sampler_val,
-        batch_size=config.DATA.BATCH_SIZE,
+        batch_size=config.TRAIN.DEVICE_BATCH_SIZE,
         shuffle=False,
         num_workers=config.DATA.NUM_WORKERS,
         pin_memory=config.DATA.PIN_MEMORY,
@@ -164,7 +164,7 @@ def build_dataset(is_train, config):
             dataset = datasets.ImageFolder(root, transform=transform)
             nb_classes = 10_000
     else:
-        raise NotImplementedError("We only support ImageNet Now.")
+        raise NotImplementedError("We only support ImageNet now.")
 
     return dataset, nb_classes
 
@@ -220,7 +220,7 @@ def build_transform(is_train, config):
         mean, std = data_mean_std[config.DATA.DATASET]
     else:
         raise RuntimeError(
-            f"Can't find mean/std for {config.DATA.DATASET} at {config.DATA.DATASET}. Please add it to data/constants.py (try using python -m data.inat normalize for iNat)."
+            f"Can't find mean/std for {config.DATA.DATASET} at {config.DATA.DATA_PATH}. Please add it to data/constants.py (try using python -m data.inat normalize for iNat)."
         )
 
     t.append(transforms.ToTensor())

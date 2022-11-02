@@ -1,13 +1,10 @@
 DATA:
   DATASET: inat21
-  NUM_WORKERS: 32
-  BATCH_SIZE: 16
   IMG_SIZE: 256
-  DATA_PATH: /mnt/10tb/data/inat21/resize-256
+  NUM_WORKERS: 32
 MODEL:
   TYPE: swinv2
-  PRETRAINED: /mnt/10tb/models/swinv2_base_patch4_window12_192_inat21_hierarchical_lr1.25_v0_epoch_89.pth
-  NAME: groovy-grape-256
+  NAME: swinv2_base_window16
   DROP_PATH_RATE: 0.2
   SWINV2:
     EMBED_DIM: 128
@@ -16,8 +13,7 @@ MODEL:
     WINDOW_SIZE: 16
     PRETRAINED_WINDOW_SIZES: [ 12, 12, 12, 6 ]
 TRAIN:
-  # Global batch size of 1024
-  ACCUMULATION_STEPS: 8
+  GLOBAL_BATCH_SIZE: 1024
   EPOCHS: 30
   WARMUP_EPOCHS: 5
 
@@ -30,5 +26,9 @@ TRAIN:
   MIN_LR: 2.0e-07
 
   HIERARCHICAL_COEFFS: [ 8, 5.65, 4, 2.82, 2, 1.41, 1 ]
+
+EXPERIMENT:
+  NAME: groovy-grape-256
+  WANDB_ID: 11o47wpm
 
 HIERARCHICAL: true
