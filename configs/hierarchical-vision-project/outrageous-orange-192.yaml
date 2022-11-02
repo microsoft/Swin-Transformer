@@ -21,9 +21,11 @@ TRAIN:
   EPOCHS: 90
   WARMUP_EPOCHS: 5
   WEIGHT_DECAY: 0.1
-
-SAVE_FREQ: 4
+  HIERARCHICAL_COEFFS: [ 8, 5.65, 4, 2.82, 2, 1.41, 1 ]
 
 EXPERIMENT:
-  NAME: funky-banana-192
-  WANDB_ID: 2a0tgwo2
+  NAME: outrageous-orange-192
+  WANDB_ID: y6zzxboz
+
+HIERARCHICAL: true
+SAVE_FREQ: 4
