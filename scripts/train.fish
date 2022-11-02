@@ -88,7 +88,7 @@ if not test -z $_flag_debug
     set nprocs 1
 end
 
-if not set -q var[1]
+if set -q $argv[1]
     # There is at least one remaining variable.
     # Confirm that this is really what you want to do
     echo "Do you want to pass the additional arguments"
