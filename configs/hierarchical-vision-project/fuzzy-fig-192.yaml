@@ -1,0 +1,32 @@
+DATA:
+  DATASET: inat21
+  IMG_SIZE: 192
+  NUM_WORKERS: 32
+MODEL:
+  TYPE: swinv2
+  NAME: swinv2_base_window12
+  DROP_PATH_RATE: 0.2
+  SWINV2:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 12
+TRAIN:
+  # Want a global batch size of 2048 because SwinV2 was trained on 16 V100s with batch size 128 (I think)
+  # But we are going to use a global batch size of 1024 because it's faster (throughput).
+  GLOBAL_BATCH_SIZE: 1024
+
+  # We are using limited epochs based on pre-training configs for imagenet22k
+  # Then we will pre-train on 256x256 for 30 epochs
+  EPOCHS: 90
+  WARMUP_EPOCHS: 5
+  WEIGHT_DECAY: 0.1
+
+  # Use 1/4 of original learning rates
+  BASE_LR: 1.25e-4
+  WARMUP_LR: 1.25e-7
+  MIN_LR: 1.25e-6
+
+EXPERIMENT:
+  NAME: fuzzy-fig-192
+  WANDB_ID: 2c0bq1h2

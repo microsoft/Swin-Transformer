@@ -12,7 +12,7 @@ function usage
     echo "  --data        path to dataset (required)"
     echo "  --debug       run with only one process rather than 8 so pdb is useable."
     echo "  --port        the master processes port (default 12345)"
-    echo "  --nprocs      number of processes"
+    echo "  --nprocs      number of processes (default 8)"
 end
 
 # Parse arguments
@@ -39,14 +39,14 @@ end
 if not string length -q -- $VENV
     echo "You need to provide a VENV environment variable."
     echo "Try:"
-    echo "  source scripts/local.fish"
+    echo "  source scripts/env.fish"
     exit 2
 end
 
 if not string length -q -- $RUN_OUTPUT
     echo "You need to provide a RUN_OUTPUT environment variable."
     echo "Try:"
-    echo "  source scripts/local.fish"
+    echo "  source scripts/env.fish"
     exit 2
 end
 

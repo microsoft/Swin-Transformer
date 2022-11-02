@@ -82,6 +82,21 @@ python -m data.inat preprocess $DATA_DIR train resize 256
 wandb login
 ```
 
+6. Set up an `env.fish` file:
+
+You need to provide `$VENV` and a `$RUN_OUTPUT` environment variables.
+I recommend using a file to save these variables.
+
+In fish:
+
+```fish
+# scripts/env.fish
+set -gx VENV venv
+set -gx RUN_OUTPUT /mnt/10tb/models/hierarchical-vision
+```
+
+Then run `source scripts/env.fish`
+
 ## AWS Helpers
 
 Uninstall v1 of awscli:
