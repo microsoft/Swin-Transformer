@@ -25,7 +25,7 @@ set -a options (fish_opt --short d --long data --required-val --long-only)
 set -a options (fish_opt --short p --long port --required-val --long-only)
 set -a options (fish_opt --short n --long nprocs --required-val --long-only)
 
-argparse $options -- $argv
+argparse --ignore-unknown $options -- $argv
 
 
 # Print help
@@ -88,8 +88,23 @@ if not test -z $_flag_debug
     set nprocs 1
 end
 
-# echo $launcher $nprocs $port $_flag_config $RUN_OUTPUT $batch_size 
-# exit 1
+if not set -q var[1]
+    # There is at least one remaining variable.
+    # Confirm that this is really what you want to do
+    echo "Do you want to pass the additional arguments"
+    echo
+    echo "  $argv"
+    echo
+    echo "to main.py?"
+    read --local --prompt-str "[y/N] " confirm
+    switch $confirm
+        case Y y
+            echo "Okay!"
+        case '*'
+            echo "Exiting..."
+            exit 0
+    end
+end
 
 OMP_NUM_THREADS=32 $launcher --nproc_per_node $nprocs \
     --master_port $port \
@@ -99,4 +114,5 @@ OMP_NUM_THREADS=32 $launcher --nproc_per_node $nprocs \
     --output $RUN_OUTPUT \
     --batch-size $batch_size \
     --fused_window_process \
-    --fused_layernorm
+    --fused_layernorm \
+    $argv  # include additional arguments

@@ -25,6 +25,14 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, loss_scaler, logger)
     msg = model.load_state_dict(checkpoint["model"], strict=False)
     logger.info(msg)
     max_accuracy = 0.0
+
+    if "max_accuracy" in checkpoint:
+        max_accuracy = checkpoint["max_accuracy"]
+
+    config.defrost()
+    config.TRAIN.START_EPOCH = checkpoint["epoch"] + 1
+    config.freeze()
+
     if (
         not config.EVAL_MODE
         and "optimizer" in checkpoint
@@ -33,16 +41,11 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, loss_scaler, logger)
     ):
         optimizer.load_state_dict(checkpoint["optimizer"])
         lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
-        config.defrost()
-        config.TRAIN.START_EPOCH = checkpoint["epoch"] + 1
-        config.freeze()
         if "scaler" in checkpoint:
             loss_scaler.load_state_dict(checkpoint["scaler"])
         logger.info(
             f"=> loaded successfully '{config.MODEL.RESUME}' (epoch {checkpoint['epoch']})"
         )
-        if "max_accuracy" in checkpoint:
-            max_accuracy = checkpoint["max_accuracy"]
 
     del checkpoint
     torch.cuda.empty_cache()

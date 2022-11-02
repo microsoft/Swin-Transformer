@@ -217,6 +217,7 @@ def main(config):
         logger.info(
             f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
         )
+        logger.info("Previously reported best accuracy: %.2f", max_accuracy)
         if config.EVAL_MODE:
             return
 
