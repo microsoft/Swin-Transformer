@@ -4,7 +4,7 @@ DATA:
   NUM_WORKERS: 32
 MODEL:
   TYPE: swinv2
-  NAME: swinv2_base
+  NAME: swinv2_base_window12
   DROP_PATH_RATE: 0.2
   SWINV2:
     EMBED_DIM: 128
@@ -26,4 +26,4 @@ SAVE_FREQ: 4
 
 EXPERIMENT:
   NAME: funky-banana-192
-  WANDB_ID: 2y91axvs
+  WANDB_ID: 2a0tgwo2

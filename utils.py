@@ -24,8 +24,8 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, loss_scaler, logger)
         checkpoint = torch.load(config.MODEL.RESUME, map_location="cpu")
     msg = model.load_state_dict(checkpoint["model"], strict=False)
     logger.info(msg)
-    max_accuracy = 0.0
 
+    max_accuracy = 0.0
     if "max_accuracy" in checkpoint:
         max_accuracy = checkpoint["max_accuracy"]
 
