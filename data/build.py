@@ -116,8 +116,36 @@ def build_dataset(is_train, config):
             ann_file = prefix + "_map_val.txt"
         dataset = IN22KDATASET(config.DATA.DATA_PATH, ann_file, transform)
         nb_classes = 21841
+    elif config.DATA.DATASET == 'mnist':
+        if config.DATA.ZIP_MODE:
+            prefix = 'train' if is_train else 'val'
+            ann_file = prefix + "_map.txt"
+            prefix = prefix + ".zip@/"
+            dataset = CachedImageFolder(config.DATA.DATA_PATH, ann_file, prefix, transform,
+                                        cache_mode=config.DATA.CACHE_MODE if is_train else 'part')
+        else:
+            # See https://github.com/pytorch/vision/issues/3549
+            datasets.MNIST.resources = [
+                ('https://ossci-datasets.s3.amazonaws.com/mnist/train-images-idx3-ubyte.gz',
+                 'f68b3c2dcbeaaa9fbdd348bbdeb94873'),
+                ('https://ossci-datasets.s3.amazonaws.com/mnist/train-labels-idx1-ubyte.gz',
+                 'd53e105ee54ea40749a09fcbcd1e9432'),
+                ('https://ossci-datasets.s3.amazonaws.com/mnist/t10k-images-idx3-ubyte.gz',
+                 '9fb629c4189551a2d022fa330f9573f3'),
+                ('https://ossci-datasets.s3.amazonaws.com/mnist/t10k-labels-idx1-ubyte.gz',
+                 'ec29112dd5afa0611ce80d1b7f02629c')
+            ]
+
+            dataset = datasets.MNIST(root='./data/mnist', train=is_train, download=True, transform=transform)
+        nb_classes = 10
+    elif config.DATA.DATASET == 'cifar10':
+        dataset = datasets.CIFAR10(root='./data/cifar10', train=is_train, download=True, transform=transform)
+        nb_classes = 10
+    elif config.DATA.DATASET == 'cifar100':
+        dataset = datasets.CIFAR100(root='./data/cifar100', train=is_train, download=True, transform=transform)
+        nb_classes = 100
     else:
-        raise NotImplementedError("We only support ImageNet Now.")
+        raise NotImplementedError("Supported datasets include MNIST, CIFAR-10, CIFAR-100, and ImageNet.")
 
     return dataset, nb_classes
 
