@@ -258,6 +258,8 @@ Note: <sup>*</sup> indicates multi-scale testing.
 
 (`Note please report accuracy numbers and provide trained models in your new repository to facilitate others to get sense of correctness and model behavior`)
 
+[01/10/2022] SwinV2 Transformer for Compressed Image Super-Resolution and Restoration: [Swin2SR](https://github.com/mv-lab/swin2sr) at AIM, ECCV 2022
+
 [06/30/2022] Swin Transformers (V1) inference implemented in FasterTransformer: [FasterTransformer](https://github.com/NVIDIA/FasterTransformer/blob/main/docs/swin_guide.md)
 
 [05/12/2022] Swin Transformers (V1) implemented in TensorFlow with the pre-trained parameters ported into them. Find the implementation,
