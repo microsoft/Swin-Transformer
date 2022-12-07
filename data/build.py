@@ -56,10 +56,16 @@ def build_loader(config):
         f"local rank {config.LOCAL_RANK} / global rank {dist.get_rank()} successfully build val dataset"
     )
 
-    # Check if we are overfitting some subset of the training data for debugging
+    # Check if we are overfitting some subset of the training data for debugging 
     if config.TRAIN.OVERFIT_BATCHES > 0:
         n_examples = config.TRAIN.OVERFIT_BATCHES * config.TRAIN.DEVICE_BATCH_SIZE
         indices = random.sample(range(len(dataset_train)), n_examples)
+        dataset_train = Subset(dataset_train, indices)
+
+    # Check if training is for low data regieme; select subset of data (newly added script)
+    if config.TRAIN.DATA_PERCENTAGE < 1:
+        n_examples = config.TRAIN.DATA_PERCENTAGE * len(dataset_train) #config.TRAIN.DEVICE_BATCH_SIZE
+        indices = random.sample(range(len(dataset_train)), int(n_examples))
         dataset_train = Subset(dataset_train, indices)
 
     num_tasks = dist.get_world_size()
@@ -151,10 +157,21 @@ def build_dataset(is_train, config):
         dataset = IN22KDATASET(config.DATA.DATA_PATH, ann_file, transform)
         nb_classes = 21841
 
+    elif config.DATA.DATASET == 'nabird':
+        prefix = 'train' if is_train else 'val'
+        root = os.path.join(config.DATA.DATA_PATH, prefix)
+        dataset = datasets.ImageFolder(root, transform=transform)
+        nb_classes = 555
+
+    elif config.DATA.DATASET == 'ip102':
+        prefix = 'train' if is_train else 'val'
+        root = os.path.join(config.DATA.DATA_PATH, prefix)
+        dataset = datasets.ImageFolder(root, transform=transform)
+        nb_classes = 102
+
     elif config.DATA.DATASET == "inat21":
         if config.DATA.ZIP_MODE:
             raise NotImplementedError("We do not support zipped inat21")
-
         prefix = "train" if is_train else "val"
         root = os.path.join(config.DATA.DATA_PATH, prefix)
         if config.HIERARCHICAL:

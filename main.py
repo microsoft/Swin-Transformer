@@ -38,7 +38,28 @@ from utils import (
     load_pretrained,
     reduce_tensor,
     save_checkpoint,
+    find_experiments,
 )
+
+
+
+class EarlyStopper:
+    def __init__(self, patience=1, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = np.inf
+
+    def early_stop(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+
 
 
 def parse_option():
@@ -47,10 +68,11 @@ def parse_option():
     )
     parser.add_argument(
         "--cfg",
-        type=str,
+        nargs="+",
+        #type=str,
         required=True,
-        metavar="FILE",
-        help="path to config file",
+        #metavar="FILE",
+        help="Paths to directories containing config.yaml files OR just a config.yaml file. Directories will be searched for any nested config.yaml files.",
     )
     parser.add_argument(
         "--opts",
@@ -126,12 +148,18 @@ def parse_option():
         type=str,
         help="overwrite optimizer if provided, can be adamw/sgd/fused_adam/fused_lamb.",
     )
+    # low-data-regieme; percentage of training data to be use for fine tuning
+    parser.add_argument(
+        "--low-data",
+        type=float,
+        help="percentage of training data (.01 to 1) to be use for fine tuning",
+    )
 
     args, unparsed = parser.parse_known_args()
 
-    config = get_config(args)
+    #config = get_config(args)
 
-    return args, config
+    return args #, config
 
 
 def main(config):
@@ -234,6 +262,8 @@ def main(config):
         throughput(data_loader_val, model, logger)
         return
 
+    early_stopper = EarlyStopper(patience=3, min_delta=0.00001)
+
     logger.info("Start training")
     start_time = time.time()
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
@@ -270,6 +300,10 @@ def main(config):
         )
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f"Max accuracy: {max_accuracy:.2f}%")
+
+        if early_stopper.early_stop(loss):
+            print ("early stop")
+            break
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -386,7 +420,9 @@ def train_one_epoch(
         {"train/epoch_time": epoch_time, "train/loss": loss_meter.avg, "epoch": epoch},
     )
 
-
+val_loss=[]
+val_acc1=[]
+val_acc5=[]
 @torch.no_grad()
 def validate(config, data_loader, model, epoch):
     if config.HIERARCHICAL:
@@ -411,6 +447,9 @@ def validate(config, data_loader, model, epoch):
 
         # measure accuracy and record loss
         loss = criterion(output, target)
+        # print (output)
+        # print (output.shape)
+        # exit()
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
 
         acc1 = reduce_tensor(acc1)
@@ -436,6 +475,12 @@ def validate(config, data_loader, model, epoch):
                 f"Mem {memory_used:.0f}MB"
             )
     logger.info(f" * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}")
+    val_loss.append(loss_meter.avg)
+    val_acc1.append(acc1_meter.avg)
+    val_acc5.append(acc5_meter.avg)
+    logger.info(f' * loss_avg {val_loss}')
+    logger.info(f' * acc1_avg {val_acc1}')
+    logger.info(f' * acc5_avg {val_acc5}')
     wandb_writer.log(
         {
             "val/acc1": acc1_meter.avg,
@@ -471,10 +516,8 @@ def throughput(data_loader, model, logger):
 
 
 if __name__ == "__main__":
-    args, config = parse_option()
 
-    if config.AMP_OPT_LEVEL:
-        print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
+    args = parse_option()
 
     if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
         rank = int(os.environ["RANK"])
@@ -483,68 +526,82 @@ if __name__ == "__main__":
     else:
         rank = -1
         world_size = -1
-    torch.cuda.set_device(config.LOCAL_RANK)
+
+    # torch.cuda.set_device(config.LOCAL_RANK)
     torch.distributed.init_process_group(
         backend="nccl", init_method="env://", world_size=world_size, rank=rank
     )
     torch.distributed.barrier()
 
-    seed = config.SEED + dist.get_rank()
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    cudnn.benchmark = True
+    for experiment_config in find_experiments(args.cfg):
 
-    # linear scale the learning rate according to total batch size, may not be optimal
-    linear_scaled_lr = (
-        config.TRAIN.BASE_LR
-        * config.TRAIN.DEVICE_BATCH_SIZE
-        * dist.get_world_size()
-        / 512.0
-    )
-    linear_scaled_warmup_lr = (
-        config.TRAIN.WARMUP_LR
-        * config.TRAIN.DEVICE_BATCH_SIZE
-        * dist.get_world_size()
-        / 512.0
-    )
-    linear_scaled_min_lr = (
-        config.TRAIN.MIN_LR
-        * config.TRAIN.DEVICE_BATCH_SIZE
-        * dist.get_world_size()
-        / 512.0
-    )
-    # gradient accumulation also need to scale the learning rate
-    if config.TRAIN.ACCUMULATION_STEPS > 1:
-        linear_scaled_lr = linear_scaled_lr * config.TRAIN.ACCUMULATION_STEPS
-        linear_scaled_warmup_lr = (
-            linear_scaled_warmup_lr * config.TRAIN.ACCUMULATION_STEPS
+        # print (find_experiments(args.cfg))
+        # print ("experiment_config",experiment_config)
+        args.cfg=experiment_config
+
+        config = get_config(args)
+
+        if config.AMP_OPT_LEVEL:
+            print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
+
+        torch.cuda.set_device(config.LOCAL_RANK)
+
+        seed = config.SEED + dist.get_rank()
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
+        cudnn.benchmark = True
+
+        # linear scale the learning rate according to total batch size, may not be optimal
+        linear_scaled_lr = (
+            config.TRAIN.BASE_LR
+            * config.TRAIN.DEVICE_BATCH_SIZE
+            * dist.get_world_size()
+            / 512.0
         )
-        linear_scaled_min_lr = linear_scaled_min_lr * config.TRAIN.ACCUMULATION_STEPS
-    config.defrost()
-    config.TRAIN.BASE_LR = linear_scaled_lr
-    config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr
-    config.TRAIN.MIN_LR = linear_scaled_min_lr
-    config.freeze()
+        linear_scaled_warmup_lr = (
+            config.TRAIN.WARMUP_LR
+            * config.TRAIN.DEVICE_BATCH_SIZE
+            * dist.get_world_size()
+            / 512.0
+        )
+        linear_scaled_min_lr = (
+            config.TRAIN.MIN_LR
+            * config.TRAIN.DEVICE_BATCH_SIZE
+            * dist.get_world_size()
+            / 512.0
+        )
+        # gradient accumulation also need to scale the learning rate
+        if config.TRAIN.ACCUMULATION_STEPS > 1:
+            linear_scaled_lr = linear_scaled_lr * config.TRAIN.ACCUMULATION_STEPS
+            linear_scaled_warmup_lr = (
+                linear_scaled_warmup_lr * config.TRAIN.ACCUMULATION_STEPS
+            )
+            linear_scaled_min_lr = linear_scaled_min_lr * config.TRAIN.ACCUMULATION_STEPS
+        config.defrost()
+        config.TRAIN.BASE_LR = linear_scaled_lr
+        config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr
+        config.TRAIN.MIN_LR = linear_scaled_min_lr
+        config.freeze()
 
-    os.makedirs(config.OUTPUT, exist_ok=True)
-    logger = create_logger(
-        output_dir=config.OUTPUT,
-        dist_rank=dist.get_rank(),
-        name=f"{config.EXPERIMENT.NAME}",
-    )
-    wandb_writer = WandbWriter(rank=dist.get_rank())
-    wandb_writer.init(config)
+        os.makedirs(config.OUTPUT, exist_ok=True)
+        logger = create_logger(
+            output_dir=config.OUTPUT,
+            dist_rank=dist.get_rank(),
+            name=f"{config.EXPERIMENT.NAME}",
+        )
+        wandb_writer = WandbWriter(rank=dist.get_rank())
+        wandb_writer.init(config)
 
-    if dist.get_rank() == 0:
-        path = os.path.join(config.OUTPUT, "config.yaml")
-        with open(path, "w") as f:
-            f.write(config.dump())
-        logger.info(f"Full config saved to {path}")
+        if dist.get_rank() == 0:
+            path = os.path.join(config.OUTPUT, "config.yaml")
+            with open(path, "w") as f:
+                f.write(config.dump())
+            logger.info(f"Full config saved to {path}")
 
-    # print config
-    logger.info(config.dump())
-    logger.info(json.dumps(vars(args)))
+        # print config
+        logger.info(config.dump())
+        logger.info(json.dumps(vars(args)))
 
-    main(config)
+        main(config)

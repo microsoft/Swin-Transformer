@@ -10,6 +10,8 @@ import os
 import yaml
 from yacs.config import CfgNode as CN
 
+
+
 _C = CN()
 
 # Base config files
@@ -203,6 +205,9 @@ _C.TRAIN.HIERARCHICAL_COEFFS = (1,)
 # [Debugging] How many batches of the training data to overfit.
 _C.TRAIN.OVERFIT_BATCHES = 0
 
+# Percentage of data for low data regieme
+_C.TRAIN.DATA_PERCENTAGE = 1
+
 # -----------------------------------------------------------------------------
 # Augmentation settings
 # -----------------------------------------------------------------------------
@@ -351,6 +356,9 @@ def update_config(config, args):
     if _check_args("optim"):
         config.TRAIN.OPTIMIZER.NAME = args.optim
 
+    if _check_args("low_data"):
+        config.TRAIN.DATA_PERCENTAGE = args.low_data
+
     # Use os.environ["LOCAL_RANK"] rather than --local_rank
     if "LOCAL_RANK" in os.environ:
         # set local rank for distributed training
@@ -397,6 +405,231 @@ def get_config(args):
     # Return a clone so that the defaults will not be altered
     # This is for the "local variable" use pattern
     config = _C.clone()
+    
     update_config(config, args)
 
+
     return config
+
+
+
+#################################### Added sript for yaml file generation #############################################
+
+# Distribution = Literal["normal", "uniform", "loguniform"]
+import tomli
+import utils
+import dataclasses
+import copy
+from typing_extensions import Literal
+
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
+Distribution = Literal["normal", "uniform", "loguniform"]
+T = TypeVar("T", bound="Config")
+
+class Config:
+    @classmethod
+    def from_dict(cls: Type[T], dct: Dict[str, Any]) -> T:
+        for field in dataclasses.fields(cls):
+            if (
+                isinstance(field.type, type)
+                and issubclass(field.type, Config)
+                and field.name in dct
+                and not isinstance(dct[field.name], field.type)
+            ):
+                if not isinstance(dct[field.name], dict):
+                    logger.warn(
+                        "Subdict is not a dict! [cls: %s, field name: %s, field type: %s, actual type: %s]",
+                        cls,
+                        field.name,
+                        field.type,
+                        type(dct[field.name]),
+                    )
+                dct[field.name] = field.type.from_dict(dct[field.name])
+
+        return cls(**dct)
+
+    @classmethod
+    def get_toml_name(cls) -> str:
+        # Because I'm a bad programmer and I do hacky things.
+        return cls.__name__[: cls.__name__.lower().find("config")].lower()
+
+    @classmethod
+    def from_existing(cls: Type[T], other: Type[T], **overrides) -> T:
+        kwargs = {**dataclasses.asdict(other), **overrides}
+
+        return cls(**kwargs)
+
+    @property
+    def pretty(self) -> str:
+        return json.dumps(dataclasses.asdict(self), indent=4)
+
+    def __str__(self) -> str:
+        return json.dumps(dataclasses.asdict(self))
+
+    def validate_field(self, fname: str, ftype) -> None:
+        choices = get_args(ftype)
+        if getattr(self, fname) not in choices:
+            raise ValueError(f"self.{fname} must be one of {', '.join(choices)}")
+
+@dataclasses.dataclass(frozen=True)
+class RandomVecConfig(Config):
+    distribution: Optional[Distribution] = None
+
+    # Distribution keyword args.
+    dist_kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.distribution is not None:
+            self.validate_field("distribution", Distribution)
+Layer = Union[
+    int,
+    Literal[
+        "sigmoid",
+        "tanh",
+        "output",
+        "cos",
+        "sine",
+        "layernorm",
+        "groupnorm",
+        "1/x",
+        "nonlinear-wht",
+        "dropout",
+    ],
+]
+
+@dataclasses.dataclass(frozen=True)
+class ProjectionConfig(Config):
+    layers: List[Layer] = dataclasses.field(default_factory=lambda: ["output"])
+    layer_kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, dct) -> "ProjectionConfig":
+        """
+        I reimplement this method because the toml dict will have a string for layers that needs to be evaluated to a real Python list.
+        """
+        for key in dct:
+            if key == "layers" and isinstance(dct[key], str):
+                dct[key] = eval(dct[key])
+
+        return cls(**dct)
+
+PromptType = Literal["uuid", "token", "vocab", "chunk-n", "natural-n"]
+
+@dataclasses.dataclass(frozen=True)
+class DataConfig(Config):
+    file: str
+    overwrite_cache: bool = False
+    """
+    Can be one of 'uuid', 'token', or 'vocab'.
+    * uuid: encodes a uuid as the prompt (typically between 20-30 tokens for GPT2).
+    * token: adds a new token to the vocabulary for each chunk (<|start0|>, <|start1|>, etc.)
+    * vocab: finds an existing token in the vocabulary that's not in any of the examples and uses it as th e prompt.
+    * chunk-n: "Chunk 1: ", "Chunk 2: ", ...
+    """
+    prompt_type: PromptType = "uuid"
+
+    chunk_length: Union[Literal["longest"], int] = "longest"
+
+    def __post_init__(self) -> None:
+        if not os.path.exists(self.file):
+            raise ValueError(f"{self.file} does not exist!")
+
+        self.validate_field("prompt_type", PromptType)
+
+        if self.chunk_length != "longest":
+            assert isinstance(self.chunk_length, int)
+
+    def get_text(self) -> str:
+        assert self.file is not None
+
+        with open(self.file, "r") as file:
+            return file.read()
+
+@dataclasses.dataclass(frozen=True)
+class ModelConfig(Config):
+    language_model_name_or_path: str
+    intrinsic_dimension: Optional[int] = None
+
+    # Structure-aware intrinsic dimension (SAID)
+    # Has no effect when intrinsic_dimension is None.
+    intrinsic_dimension_said: bool = False
+
+    # temperature of 1.0 has no effect, lower tend toward greedy sampling
+    temperature: float = 1.0
+
+    # The number of highest probability vocabulary tokens to keep for top-k-filtering.
+    top_k: int = 0
+
+    # If set to float < 1, only the most probable tokens with probabilities that add up to top_p or higher are kept for generation.
+    top_p: float = 0.9
+
+    # primarily useful for CTRL model; in that case, use 1.2
+    repetition_penalty: float = 1.0
+
+    # optional stop token (ignore text generated after this token)
+    stop_token: Optional[str] = None
+
+    # context window size
+    context_window: int = 1024
+
+    # dropout probability for fully connected layers in embeddings, encoder, and pooler, embeddings, and attention.
+    dropout: float = 0.0
+
+    # dropout probability for the intrinsic dimension layer(s)
+    int_dim_dropout: float = 0.0
+
+    # Whether to use pre-trained weights.
+    pretrained: bool = True
+
+    random_vector: RandomVecConfig = dataclasses.field(default_factory=RandomVecConfig)
+
+    projection: ProjectionConfig = dataclasses.field(default_factory=ProjectionConfig)
+
+    normalized: bool = True
+    scaled: bool = False
+    scaling_factor: float = 1
+
+    def __post_init__(self) -> None:
+        assert isinstance(self.random_vector, RandomVecConfig), str(
+            type(self.random_vector)
+        )
+        assert isinstance(self.projection, ProjectionConfig), str(type(self.projection))
+
+SeedSource = Literal["trial", "config", "random"]
+
+@dataclasses.dataclass(frozen=True)
+class ExperimentConfig(Config):
+    model: ModelConfig
+    # tokenizer: TokenizerConfig
+
+    ####Below two lines commented by me ##############
+    data: DataConfig
+    # training: TrainingConfig
+
+    trials: int = 3
+    save_weights: bool = True
+    seed_source: SeedSource = "trial"
+    seed: int = 0
+
+    def __post_init__(self) -> None:
+        self.validate_field("seed_source", SeedSource)
+
+
+# def load_configs(config_file: str) -> Iterator[ExperimentConfig]:
+#     """
+#     A config file could contain many experiments. For any field in a config file, if it is a list, then it turns into multiple experiments. If there are multiple lists, then each combination of elements from each list forms a new experiment.
+#     """
+#     with open(config_file, "r") as file:
+#         config_dict = tomli.loads(file.read())
+
+#     for flat in utils.flattened(config_dict):
+#         yield ExperimentConfig.from_dict(copy.deepcopy(flat))

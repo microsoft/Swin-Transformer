@@ -103,7 +103,7 @@ class WandbWriter:
             kwargs["id"] = config.EXPERIMENT.WANDB_ID
             kwargs["resume"] = "allow"
 
-        wandb.init(**kwargs)
+        wandb.init(**kwargs, mode="disabled")
 
         # Validation metrics
         wandb.define_metric("val/loss", step_metric="epoch", summary="max")
@@ -135,3 +135,19 @@ class WandbWriter:
             raise RuntimeError(f"Should not get .name with rank {self.rank}.")
 
         return wandb.run.name
+
+
+#############################  Added Script to generate yaml files  #################################
+
+def init(name: str, verbose: bool = False, date=True) -> logging.Logger:
+    if date:
+        log_format = "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s"
+    else:
+        log_format = "[%(levelname)s] [%(name)s] %(message)s"
+
+    if not verbose:
+        logging.basicConfig(level=logging.INFO, format=log_format)
+    else:
+        logging.basicConfig(level=logging.DEBUG, format=log_format)
+
+    return logging.getLogger(name)

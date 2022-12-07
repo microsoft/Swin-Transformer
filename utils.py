@@ -116,8 +116,8 @@ def handle_linear_head(config, model, state_dict, logger):
         assert hasattr(model.head, "bias"), "Should have a single random linear head"
         # Increment finegrained level until the key doesn't exist.
         # Then it is the last level in the hierarchical model
-        max_level = 0
-        while _hierarchical_bias_k(max_level) in state_dict:
+        max_level = -1
+        while _hierarchical_bias_k(max_level+1) in state_dict:
             max_level += 1
 
         finegrained_num_classes_pretrained = state_dict[
@@ -298,6 +298,9 @@ def load_pretrained(config, model, logger):
             "relative_coords_table" in key
             or "relative_position_index" in key
             or "attn_mask" in key
+            or "logit_clamp_max" in key
+            or "head" in key
+            or "head.heads" in key
         ), f"Should only reinitialize relative positional information, not '{key}'"
     logger.warning(msg)
 
@@ -427,3 +430,80 @@ class NativeScalerWithGradNormCount:
 
     def load_state_dict(self, state_dict):
         self._scaler.load_state_dict(state_dict)
+
+
+############################### Added script to generate yaml files  ###########################
+
+
+from typing import Any, Dict, Iterator, List, Mapping, Tuple
+import config
+
+def files_with_extension(paths: List[str], ext: str) -> Iterator[str]:
+    # add . to ext if it doesn't have it.
+    ext = "." + ext if ext[0] != "." else ext
+
+    for path in paths:
+        if os.path.isfile(path):
+            if path.endswith(ext):
+                yield path
+                continue
+
+        for dirpath, _, filenames in os.walk(path):
+            for filename in filenames:
+                if filename.endswith(ext):
+                    yield os.path.join(dirpath, filename) 
+
+def _flatten_dict_of_lists(
+    dict_of_lists: Mapping[object, List[object]],
+) -> Iterator[Dict[object, object]]:
+
+    assert isinstance(dict_of_lists, dict)
+
+    if not dict_of_lists:
+        yield dict_of_lists
+        return
+
+    field, value_list = dict_of_lists.popitem()
+
+    assert isinstance(value_list, list)
+
+    for value in value_list:
+        for flattened_dict in _flatten_dict_of_lists(dict_of_lists):
+            yield {**flattened_dict, field: value}
+    dict_of_lists[field] = value_list
+
+def flattened(obj: object) -> Iterator[Any]:
+    """
+    Given a list, dictionary, or other value, yields an iterator of dictionaries/other values with no lists anywhere inside the structure.
+    """
+    if not isinstance(obj, dict) and not isinstance(obj, list):
+        yield obj
+        return
+
+    if isinstance(obj, list):
+        for elem in obj:
+            yield from flattened(elem)
+        return
+
+    assert isinstance(obj, dict)
+    
+    if not obj:
+        yield obj
+        return
+    flat_list = {field: list(flattened(value)) for field, value in obj.items()}
+    yield from _flatten_dict_of_lists(flat_list)
+
+
+
+def find_experiments(paths): # -> Iterator[config.ExperimentConfig]:
+    """
+    Arguments:
+    * args (list[str]): list of strings that are either directories containing files or config files themselves.
+    """
+
+    if not isinstance(paths, list):
+        paths = [paths]
+
+    for config_file in files_with_extension(paths, ".yaml"):
+        yield config_file
+        # yield from config.load_configs(config_file)

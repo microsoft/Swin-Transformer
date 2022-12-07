@@ -16,6 +16,8 @@ def accuracy(output, target, topk=(1,), hierarchy_level=-1):
     if isinstance(output, list):
         output_levels = len(output)
         output = output[-1]
+        print (output_levels)
+    # print (output)
 
     batch_size = output.size(0)
 
