@@ -8,6 +8,7 @@
 import os
 import torch
 import torch.distributed as dist
+import horovod.torch as hvd
 from torch._six import inf
 
 
@@ -176,6 +177,13 @@ def reduce_tensor(tensor):
     return rt
 
 
+def reduce_tensor_hvd(tensor):
+    rt = tensor.clone()
+    avg_rt = hvd.allreduce(rt)
+    # rt /= hvd.size()
+    return avg_rt
+
+
 def ampscaler_get_grad_norm(parameters, norm_type: float = 2.0) -> torch.Tensor:
     if isinstance(parameters, torch.Tensor):
         parameters = [parameters]
@@ -192,11 +200,42 @@ def ampscaler_get_grad_norm(parameters, norm_type: float = 2.0) -> torch.Tensor:
     return total_norm
 
 
+class NativeScalerWithGradNormCountHvd:
+    state_dict_key = "amp_scaler"
+
+    def __init__(self):
+        self._scaler = torch.cuda.amp.GradScaler(enabled=False)
+
+    def __call__(self, loss, optimizer, clip_grad=None, parameters=None, create_graph=False, update_grad=True):
+        self._scaler.scale(loss).backward(create_graph=create_graph)
+        optimizer.synchronize()
+        if update_grad:
+            if clip_grad is not None:
+                assert parameters is not None
+                self._scaler.unscale_(optimizer)  # unscale the gradients of optimizer's assigned params in-place
+                norm = torch.nn.utils.clip_grad_norm_(parameters, clip_grad)
+            else:
+                self._scaler.unscale_(optimizer)
+                norm = ampscaler_get_grad_norm(parameters)
+            with optimizer.skip_synchronize():
+                self._scaler.step(optimizer)
+            self._scaler.update()
+        else:
+            norm = None
+        return norm
+
+    def state_dict(self):
+        return self._scaler.state_dict()
+
+    def load_state_dict(self, state_dict):
+        self._scaler.load_state_dict(state_dict)
+
+
 class NativeScalerWithGradNormCount:
     state_dict_key = "amp_scaler"
 
     def __init__(self):
-        self._scaler = torch.cuda.amp.GradScaler()
+        self._scaler = torch.cuda.amp.GradScaler(enabled=False)
 
     def __call__(self, loss, optimizer, clip_grad=None, parameters=None, create_graph=False, update_grad=True):
         self._scaler.scale(loss).backward(create_graph=create_graph)

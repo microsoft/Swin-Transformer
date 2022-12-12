@@ -1,4 +1,5 @@
 from .build import build_loader as _build_loader
+from .build import build_loader_hvd as _build_loader_hvd
 from .data_simmim_pt import build_loader_simmim
 from .data_simmim_ft import build_loader_finetune
 
@@ -10,3 +11,7 @@ def build_loader(config, simmim=False, is_pretrain=False):
         return build_loader_simmim(config)
     else:
         return build_loader_finetune(config)
+
+def build_loader_hvd(config):
+    return _build_loader_hvd(config)
+
