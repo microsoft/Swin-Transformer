@@ -146,7 +146,7 @@ _C.MODEL.SIMMIM.NORM_TARGET.PATCH_SIZE = 47
 # -----------------------------------------------------------------------------
 _C.TRAIN = CN()
 _C.TRAIN.START_EPOCH = 0
-_C.TRAIN.EPOCHS = 300
+_C.TRAIN.EPOCHS = 90
 _C.TRAIN.WARMUP_EPOCHS = 20
 _C.TRAIN.WEIGHT_DECAY = 0.05
 _C.TRAIN.BASE_LR = 5e-4
@@ -291,6 +291,8 @@ def update_config(config, args):
     # merge from specific arguments
     if _check_args('batch_size'):
         config.DATA.BATCH_SIZE = args.batch_size
+    if _check_args('device'):
+        config.DEVICE = args.device
     if _check_args('data_path'):
         config.DATA.DATA_PATH = args.data_path
     if _check_args('zip'):
