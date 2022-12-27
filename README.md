@@ -258,7 +258,7 @@ Note: <sup>*</sup> indicates multi-scale testing.
 
 (`Note please report accuracy numbers and provide trained models in your new repository to facilitate others to get sense of correctness and model behavior`)
 
-[06/30/2022] Swin Transformers (V1) inference implemented in FasterTransformer: [FasterTransformer](https://github.com/NVIDIA/FasterTransformer/blob/main/docs/swin_guide.md)
+[06/30/2022] Swin Transformers inference implemented in FasterTransformer: [FasterTransformer](https://github.com/NVIDIA/FasterTransformer/blob/main/docs/swin_guide.md)
 
 [05/12/2022] Swin Transformers (V1) implemented in TensorFlow with the pre-trained parameters ported into them. Find the implementation,
 TensorFlow weights, code example here in [this repository](https://github.com/sayakpaul/swin-transformers-tf/).
