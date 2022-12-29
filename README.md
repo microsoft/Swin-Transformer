@@ -27,6 +27,10 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 ## Updates
 
+***12/29/2022***
+
+1. **Nvidia**'s [FasterTransformer](https://github.com/NVIDIA/FasterTransformer/blob/main/docs/swin_guide.md) now supports Swin Transformer V2 inference, which have significant speed improvements on `T4 and A100 GPUs`.
+
 ***11/30/2022***
 
 1. Models and codes of **Feature Distillation** are released. Please refer to [Feature-Distillation](https://github.com/SwinTransformer/Feature-Distillation) for details, and the checkpoints (FD-EsViT-Swin-B, FD-DeiT-ViT-B, FD-DINO-ViT-B, FD-CLIP-ViT-B, FD-CLIP-ViT-L).
@@ -257,6 +261,8 @@ Note: <sup>*</sup> indicates multi-scale testing.
 ***In this pargraph, we cross link third-party repositories which use Swin and report results. You can let us know by raising an issue*** 
 
 (`Note please report accuracy numbers and provide trained models in your new repository to facilitate others to get sense of correctness and model behavior`)
+
+[12/29/2022] Swin Transformers (V2) inference implemented in FasterTransformer: [FasterTransformer](https://github.com/NVIDIA/FasterTransformer/blob/main/docs/swin_guide.md)
 
 [06/30/2022] Swin Transformers (V1) inference implemented in FasterTransformer: [FasterTransformer](https://github.com/NVIDIA/FasterTransformer/blob/main/docs/swin_guide.md)
 
