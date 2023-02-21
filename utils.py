@@ -48,6 +48,7 @@ def load_pretrained(config, model, logger):
     checkpoint = torch.load(config.MODEL.PRETRAINED, map_location='cpu')
     state_dict = checkpoint['model']
 
+
      # for MoBY, preplace prefixes
     if sorted(list(state_dict.keys()))[0].startswith('encoder'):
         state_dict = {k.replace('encoder.', ''): v for k, v in state_dict.items() if k.startswith('encoder.')}
