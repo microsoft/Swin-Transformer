@@ -17,7 +17,7 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 > **Semi-Supervised Object Detection**: See [Soft Teacher](https://github.com/microsoft/SoftTeacher).
 
-> **SSL: Contrasitive Learning**: See [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL).
+> **SSL: Contrastive Learning**: See [Transformer-SSL](https://github.com/SwinTransformer/Transformer-SSL).
 
 > **SSL: Masked Image Modeling**: See [get_started.md#simmim-support](https://github.com/microsoft/Swin-Transformer/blob/main/get_started.md#simmim-support).
 
