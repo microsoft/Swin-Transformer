@@ -26,7 +26,11 @@ from data import build_loader
 from lr_scheduler import build_scheduler
 from optimizer import build_optimizer
 from logger import create_logger
-from utils_simmim import load_checkpoint, load_pretrained, save_checkpoint, get_grad_norm, auto_resume_helper, reduce_tensor
+from utils_simmim import load_checkpoint, load_pretrained, save_checkpoint, get_grad_norm, auto_resume_helper, \
+    reduce_tensor
+
+# pytorch major version (1.x or 2.x)
+PYTORCH_MAJOR_VERSION = int(torch.__version__.split('.')[0])
 
 
 def parse_option():
@@ -57,7 +61,10 @@ def parse_option():
     parser.add_argument('--throughput', action='store_true', help='Test throughput only')
 
     # distributed training
-    parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
+    # for pytorch >= 2.0, use `os.environ['LOCAL_RANK']` instead
+    # (see https://pytorch.org/docs/stable/distributed.html#launch-utility)
+    if PYTORCH_MAJOR_VERSION == 1:
+        parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
 
     args = parser.parse_args()
 
@@ -67,7 +74,8 @@ def parse_option():
 
 
 def main(config):
-    dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config, simmim=True, is_pretrain=False)
+    dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config, simmim=True,
+                                                                                            is_pretrain=False)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config, is_pretrain=False)
@@ -110,7 +118,7 @@ def main(config):
             logger.info(f'no checkpoint found in {config.OUTPUT}, ignoring auto resume')
 
     if config.MODEL.RESUME:
-        max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, scaler,  logger)
+        max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, scaler, logger)
         acc1, acc5, loss = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
@@ -147,7 +155,7 @@ def main(config):
 def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mixup_fn, lr_scheduler, scaler):
     model.train()
     optimizer.zero_grad()
-    
+
     logger.info(f'Current learning rate for different parameter groups: {[it["lr"] for it in optimizer.param_groups]}')
 
     num_steps = len(data_loader)

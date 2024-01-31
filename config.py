@@ -6,8 +6,12 @@
 # --------------------------------------------------------'
 
 import os
+import torch
 import yaml
 from yacs.config import CfgNode as CN
+
+# pytorch major version (1.x or 2.x)
+PYTORCH_MAJOR_VERSION = int(torch.__version__.split('.')[0])
 
 _C = CN()
 
@@ -334,7 +338,10 @@ def update_config(config, args):
         config.TRAIN.OPTIMIZER.NAME = args.optim
 
     # set local rank for distributed training
-    config.LOCAL_RANK = args.local_rank
+    if PYTORCH_MAJOR_VERSION == 1:
+        config.LOCAL_RANK = args.local_rank
+    else:
+        config.LOCAL_RANK = int(os.environ['LOCAL_RANK'])
 
     # output folder
     config.OUTPUT = os.path.join(config.OUTPUT, config.MODEL.NAME, config.TAG)
