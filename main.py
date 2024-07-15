@@ -29,6 +29,9 @@ from logger import create_logger
 from utils import load_checkpoint, load_pretrained, save_checkpoint, NativeScalerWithGradNormCount, auto_resume_helper, \
     reduce_tensor
 
+# pytorch major version (1.x or 2.x)
+PYTORCH_MAJOR_VERSION = int(torch.__version__.split('.')[0])
+
 
 def parse_option():
     parser = argparse.ArgumentParser('Swin Transformer training and evaluation script', add_help=False)
@@ -64,7 +67,10 @@ def parse_option():
     parser.add_argument('--throughput', action='store_true', help='Test throughput only')
 
     # distributed training
-    parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
+    # for pytorch >= 2.0, use `os.environ['LOCAL_RANK']` instead
+    # (see https://pytorch.org/docs/stable/distributed.html#launch-utility)
+    if PYTORCH_MAJOR_VERSION == 1:
+        parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
 
     # for acceleration
     parser.add_argument('--fused_window_process', action='store_true',

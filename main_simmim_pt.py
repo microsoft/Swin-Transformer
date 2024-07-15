@@ -26,6 +26,9 @@ from optimizer import build_optimizer
 from logger import create_logger
 from utils_simmim import load_checkpoint, save_checkpoint, get_grad_norm, auto_resume_helper
 
+# pytorch major version (1.x or 2.x)
+PYTORCH_MAJOR_VERSION = int(torch.__version__.split('.')[0])
+
 
 def parse_option():
     parser = argparse.ArgumentParser('SimMIM pre-training script', add_help=False)
@@ -52,7 +55,10 @@ def parse_option():
     parser.add_argument('--tag', help='tag of experiment')
 
     # distributed training
-    parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
+    # for pytorch >= 2.0, use `os.environ['LOCAL_RANK']` instead
+    # (see https://pytorch.org/docs/stable/distributed.html#launch-utility)
+    if PYTORCH_MAJOR_VERSION == 1:
+        parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
 
     args = parser.parse_args()
 
