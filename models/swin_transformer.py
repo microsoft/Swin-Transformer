@@ -171,7 +171,6 @@ class WindowAttention(nn.Module):
         flops += N * self.dim * self.dim
         return flops
 
-
 class SwinTransformerBlock(nn.Module):
     r""" Swin Transformer Block.
 
@@ -203,10 +202,7 @@ class SwinTransformerBlock(nn.Module):
         self.window_size = window_size
         self.shift_size = shift_size
         self.mlp_ratio = mlp_ratio
-        if min(self.input_resolution) <= self.window_size:
-            # if window size is larger than input resolution, we don't partition windows
-            self.shift_size = 0
-            self.window_size = min(self.input_resolution)
+
         assert 0 <= self.shift_size < self.window_size, "shift_size must in 0-window_size"
 
         self.norm1 = norm_layer(dim)
@@ -219,9 +215,28 @@ class SwinTransformerBlock(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-        if self.shift_size > 0:
+        self.atten_mask = None
+        self.register_buffer("attn_mask", attn_mask)
+        self.fused_window_process = fused_window_process
+
+    def forward(self, x):
+        """
+        x: B, H, W, C
+        """
+        B, H, W, C = x.shape
+
+        assert H % self.window_size == 0 and W % self.window_size == 0, \
+            f"input feature has wrong size {H}*{W} not a multiple of window size {self.window_size}"
+
+        x = x.view(B, H * W, C)
+        shortcut = x
+        x = self.norm1(x)
+        x = x.view(B, H, W, C)
+
+        if self.shift_size > 0 and self.atten_mask is None or self.input_resolution != (H, W):
+            self.input_resolution = (H, W)
+
             # calculate attention mask for SW-MSA
-            H, W = self.input_resolution
             img_mask = torch.zeros((1, H, W, 1))  # 1 H W 1
             h_slices = (slice(0, -self.window_size),
                         slice(-self.window_size, -self.shift_size),
@@ -239,20 +254,7 @@ class SwinTransformerBlock(nn.Module):
             mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
             attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
             attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(attn_mask == 0, float(0.0))
-        else:
-            attn_mask = None
-
-        self.register_buffer("attn_mask", attn_mask)
-        self.fused_window_process = fused_window_process
-
-    def forward(self, x):
-        H, W = self.input_resolution
-        B, L, C = x.shape
-        assert L == H * W, "input feature has wrong size"
-
-        shortcut = x
-        x = self.norm1(x)
-        x = x.view(B, H, W, C)
+            self.attn_mask = attn_mask.to(x.device)
 
         # cyclic shift
         if self.shift_size > 0:
@@ -291,25 +293,7 @@ class SwinTransformerBlock(nn.Module):
         # FFN
         x = x + self.drop_path(self.mlp(self.norm2(x)))
 
-        return x
-
-    def extra_repr(self) -> str:
-        return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
-               f"window_size={self.window_size}, shift_size={self.shift_size}, mlp_ratio={self.mlp_ratio}"
-
-    def flops(self):
-        flops = 0
-        H, W = self.input_resolution
-        # norm1
-        flops += self.dim * H * W
-        # W-MSA/SW-MSA
-        nW = H * W / self.window_size / self.window_size
-        flops += nW * self.attn.flops(self.window_size * self.window_size)
-        # mlp
-        flops += 2 * H * W * self.dim * self.dim * self.mlp_ratio
-        # norm2
-        flops += self.dim * H * W
-        return flops
+        return x.view(B, H, W, C)
 
 
 class PatchMerging(nn.Module):
@@ -330,14 +314,14 @@ class PatchMerging(nn.Module):
 
     def forward(self, x):
         """
-        x: B, H*W, C
+        x: B, H, W, C
         """
-        H, W = self.input_resolution
-        B, L, C = x.shape
-        assert L == H * W, "input feature has wrong size"
-        assert H % 2 == 0 and W % 2 == 0, f"x size ({H}*{W}) are not even."
+        B, W, H, C = x.shape
 
-        x = x.view(B, H, W, C)
+        if self.input_resolution != (H, W):
+            self.input_resolution = (H, W)
+
+        assert H % 2 == 0 and W % 2 == 0, f"x size ({H}*{W}) are not even."
 
         x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
         x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
@@ -349,7 +333,7 @@ class PatchMerging(nn.Module):
         x = self.norm(x)
         x = self.reduction(x)
 
-        return x
+        return x.view(B, H // 2, W // 2, 2 * C)
 
     def extra_repr(self) -> str:
         return f"input_resolution={self.input_resolution}, dim={self.dim}"
@@ -445,15 +429,13 @@ class PatchEmbed(nn.Module):
         norm_layer (nn.Module, optional): Normalization layer. Default: None
     """
 
-    def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
+    def __init__(self, img_size=None, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
         super().__init__()
-        img_size = to_2tuple(img_size)
-        patch_size = to_2tuple(patch_size)
-        patches_resolution = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]]
-        self.img_size = img_size
         self.patch_size = patch_size
-        self.patches_resolution = patches_resolution
-        self.num_patches = patches_resolution[0] * patches_resolution[1]
+        if img_size is not None:
+            self.patches_resolution = (img_size // patch_size, img_size // patch_size)
+        else:
+            self.patches_resolution = (0, 0)
 
         self.in_chans = in_chans
         self.embed_dim = embed_dim
@@ -466,16 +448,27 @@ class PatchEmbed(nn.Module):
 
     def forward(self, x):
         B, C, H, W = x.shape
-        # FIXME look at relaxing size constraints
-        assert H == self.img_size[0] and W == self.img_size[1], \
-            f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
+
+        assert H % self.patch_size == 0 and W % self.patch_size == 0, \
+            f"Input image size ({H}*{W}) doesn't match the patch size ({self.patch_size})."
+
+        Ph, Pw = H // self.patch_size, W // self.patch_size
+        if min(self.patches_resolution) == 0 or self.patches_resolution != (Ph, Pw):
+            self.patches_resolution = (Ph, Pw)
+
         x = self.proj(x).flatten(2).transpose(1, 2)  # B Ph*Pw C
         if self.norm is not None:
             x = self.norm(x)
-        return x
 
-    def flops(self):
-        Ho, Wo = self.patches_resolution
+        return x.view(B, Ph, Pw, -1)
+
+    def flops(self, patches_resolution=(0, 0)):
+        if min(patches_resolution) > 0:
+            Ho, Wo = patches_resolution
+        elif min(self.patches_resolution) > 0:
+            Ho, Wo = self.patches_resolution
+        else:
+            raise ValueError("Patches resolution is not set.")
         flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
         if self.norm is not None:
             flops += Ho * Wo * self.embed_dim
