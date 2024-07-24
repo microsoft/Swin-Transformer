@@ -225,9 +225,6 @@ class SwinTransformerBlock(nn.Module):
         """
         B, H, W, C = x.shape
 
-        if self.input_resolution != (H, W):
-            self.input_resolution = (H, W)
-
         assert H % self.window_size == 0 and W % self.window_size == 0, \
             f"input feature has wrong size {H}*{W} not a multiple of window size {self.window_size}"
 
@@ -236,7 +233,9 @@ class SwinTransformerBlock(nn.Module):
         x = self.norm1(x)
         x = x.view(B, H, W, C)
 
-        if self.shift_size > 0 and self.atten_mask is None:
+        if self.shift_size > 0 and self.atten_mask is None or self.input_resolution != (H, W):
+            self.input_resolution = (H, W)
+
             # calculate attention mask for SW-MSA
             img_mask = torch.zeros((1, H, W, 1))  # 1 H W 1
             h_slices = (slice(0, -self.window_size),
