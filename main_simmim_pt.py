@@ -129,7 +129,23 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, lr_scheduler, 
 
     start = time.time()
     end = time.time()
-    for idx, (img, mask, _) in enumerate(data_loader):
+    for idx, samples in enumerate(data_loader):
+        if isinstance(samples, (list, tuple)):
+            if len(samples) == 3:
+                img, mask, _ = samples
+            elif len(samples) == 2:
+                img, mask = samples
+                _ = None
+            else:
+                raise ValueError(
+                    f"Unexpected number of items returned by the dataloader: {len(samples)}"
+                )
+        else:
+            raise TypeError(
+                "Expected the dataloader to return a tuple or list, "
+                f"but got {type(samples).__name__}"
+            )
+
         img = img.cuda(non_blocking=True)
         mask = mask.cuda(non_blocking=True)
 
