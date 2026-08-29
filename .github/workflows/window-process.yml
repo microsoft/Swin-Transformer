@@ -1,0 +1,68 @@
+# Correctness checks for the fused window kernels that need no GPU.
+#
+# The kernels perform no arithmetic on tensor values: each is a gather whose
+# whole logic is the computation of input_offset from blockIdx. reference.py
+# transcribes that to PyTorch, so the index math can be checked on a CPU runner.
+# torch.utils.hipify is pure Python for the same reason, so the ROCm/HIP
+# translation can be verified here too.
+#
+# The parity tests against the compiled extension (unit_test.py,
+# test_model_parity.py) need a CUDA device, so they assert nothing on this
+# runner. They are still executed, to catch the case where they fail to import
+# or error out instead of skipping.
+
+name: window process
+
+on:
+  push:
+    paths:
+      - 'kernels/window_process/**'
+      - '.github/workflows/window-process.yml'
+  pull_request:
+    paths:
+      - 'kernels/window_process/**'
+      - '.github/workflows/window-process.yml'
+  workflow_dispatch:
+
+jobs:
+  cpu-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: '3.9'
+            torch-version: '2.8.0'
+          - python-version: '3.11'
+            torch-version: '2.13.0'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install PyTorch (CPU build)
+        # Pinned, because the two legs are not interchangeable: hipify rewrites
+        # the stream getter on 2.8 and leaves it on 2.13, and hipify_check.py is
+        # written to accept either. Resolving whatever is newest would silently
+        # stop covering one of the two behaviours.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install torch==${{ matrix.torch-version }} \
+            --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Index math
+        working-directory: kernels/window_process
+        run: python -m unittest test_index_math -v
+
+      - name: CUDA to HIP translation
+        working-directory: kernels/window_process
+        run: python hipify_check.py
+
+      - name: GPU test files import and skip cleanly
+        working-directory: kernels/window_process
+        run: |
+          python unit_test.py
+          python test_model_parity.py
